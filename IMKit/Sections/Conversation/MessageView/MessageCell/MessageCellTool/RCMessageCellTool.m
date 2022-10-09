@@ -133,11 +133,10 @@
                  }
         };
     }
-    
 }
 
 #pragma mark - Private Methods
 + (UIImage *)getResizableImage:(UIImage *)image{
-    return [image resizableImageWithCapInsets:UIEdgeInsetsMake(image.size.height * 0.5, image.size.width * 0.5, image.size.height * 0.5, image.size.width * 0.5)];
+    return [image resizableImageWithCapInsets:UIEdgeInsetsMake(30, image.size.width/2, 30, image.size.width/2) resizingMode:UIImageResizingModeStretch];
 }
 @end

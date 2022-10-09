@@ -1869,40 +1869,40 @@ static NSString *const rcUnknownMessageCellIndentifier = @"rcUnknownMessageCellI
     __weak typeof(self) __weakself = self;
     //如果消息是选择状态，不更新leftBar
     if (self.allowsMessageCellSelection) {
-        dispatch_async(dispatch_get_main_queue(), ^{
-            __weakself.rightBarButtonItems = __weakself.navigationItem.rightBarButtonItems;
-            __weakself.leftBarButtonItems = __weakself.navigationItem.leftBarButtonItems;
-            __weakself.navigationItem.rightBarButtonItems = nil;
-            __weakself.navigationItem.leftBarButtonItems = nil;
-            UIBarButtonItem *left =
-                [[UIBarButtonItem alloc] initWithTitle:RCLocalizedString(@"Cancel")
-                                                 style:UIBarButtonItemStylePlain
-                                                target:self
-                                                action:@selector(onCancelMultiSelectEvent:)];
-
-            [left setTintColor:RCKitConfigCenter.ui.globalNavigationBarTintColor];
-            self.navigationItem.leftBarButtonItem = left;
-        });
+//        dispatch_async(dispatch_get_main_queue(), ^{
+//            __weakself.rightBarButtonItems = __weakself.navigationItem.rightBarButtonItems;
+//            __weakself.leftBarButtonItems = __weakself.navigationItem.leftBarButtonItems;
+//            __weakself.navigationItem.rightBarButtonItems = nil;
+//            __weakself.navigationItem.leftBarButtonItems = nil;
+//            UIBarButtonItem *left =
+//                [[UIBarButtonItem alloc] initWithTitle:RCLocalizedString(@"Cancel")
+//                                                 style:UIBarButtonItemStylePlain
+//                                                target:self
+//                                                action:@selector(onCancelMultiSelectEvent:)];
+//
+//            [left setTintColor:RCKitConfigCenter.ui.globalNavigationBarTintColor];
+//            self.navigationItem.leftBarButtonItem = left;
+//        });
     } else {
         if(!self.displayConversationTypeArray) {
-            dispatch_async(dispatch_get_main_queue(), ^{
-                __weakself.navigationItem.leftBarButtonItems = __weakself.leftBarButtonItems;
-                __weakself.leftBarButtonItems = nil;
-                if (__weakself.conversationType != ConversationType_Encrypted && __weakself.rightBarButtonItems) {
-                    __weakself.navigationItem.rightBarButtonItems = __weakself.rightBarButtonItems;
-                    __weakself.rightBarButtonItems = nil;
-                }
-            });
+//            dispatch_async(dispatch_get_main_queue(), ^{
+//                __weakself.navigationItem.leftBarButtonItems = __weakself.leftBarButtonItems;
+//                __weakself.leftBarButtonItems = nil;
+//                if (__weakself.conversationType != ConversationType_Encrypted && __weakself.rightBarButtonItems) {
+//                    __weakself.navigationItem.rightBarButtonItems = __weakself.rightBarButtonItems;
+//                    __weakself.rightBarButtonItems = nil;
+//                }
+//            });
             return;
         }
-        dispatch_async(dispatch_get_main_queue(), ^{
-            [__weakself.navigationItem setLeftBarButtonItems:[__weakself getLeftBackButton]];
-            __weakself.leftBarButtonItems = nil;
-            if (__weakself.rightBarButtonItems) {
-                __weakself.navigationItem.rightBarButtonItems = __weakself.rightBarButtonItems;
-                __weakself.rightBarButtonItems = nil;
-            }
-        });
+//        dispatch_async(dispatch_get_main_queue(), ^{
+//            [__weakself.navigationItem setLeftBarButtonItems:[__weakself getLeftBackButton]];
+//            __weakself.leftBarButtonItems = nil;
+//            if (__weakself.rightBarButtonItems) {
+//                __weakself.navigationItem.rightBarButtonItems = __weakself.rightBarButtonItems;
+//                __weakself.rightBarButtonItems = nil;
+//            }
+//        });
     }
 }
 
@@ -2196,7 +2196,7 @@ static NSString *const rcUnknownMessageCellIndentifier = @"rcUnknownMessageCellI
                                    action:@selector(onTranslateMessageCell:)];
         [items addObject:transItem];
     }
-    if (self.conversationType != ConversationType_SYSTEM) {
+    if (self.conversationType != ConversationType_GROUP) {
         [items addObject:multiSelectItem];
     }
     
@@ -2239,9 +2239,10 @@ static NSString *const rcUnknownMessageCellIndentifier = @"rcUnknownMessageCellI
         [userId isEqualToString:[RCIM sharedRCIM].currentUserInfo.userId]) {
         return;
     }
-
-    [self.chatSessionInputBarControl addMentionedUser:[self getSelectingUserInfo:userId]];
-    [self.chatSessionInputBarControl.inputTextView becomeFirstResponder];
+    if (userId) {
+        [self.chatSessionInputBarControl addMentionedUser:[self getSelectingUserInfo:userId]];
+        [self.chatSessionInputBarControl.inputTextView becomeFirstResponder];
+    }
 }
 
 #pragma mark 内部点击方法
@@ -3362,9 +3363,9 @@ static NSString *const rcUnknownMessageCellIndentifier = @"rcUnknownMessageCellI
     }
     NSArray *items;
     if (self.conversationType == ConversationType_CUSTOMERSERVICE) {
-        items = [RCKitUtility getLeftNavigationItems:RCResourceImage(@"navigator_btn_back") title:backString target:self action:@selector(customerServiceLeftCurrentViewController)];
+        items = [RCKitUtility getLeftNavigationItems:RCResourceImage(@"navigator_btn_back") title:@"" target:self action:@selector(customerServiceLeftCurrentViewController)];
     } else {
-        items = [RCKitUtility getLeftNavigationItems:RCResourceImage(@"navigator_btn_back") title:backString target:self action:@selector(leftBarButtonItemPressed:)];
+        items = [RCKitUtility getLeftNavigationItems:RCResourceImage(@"navigator_btn_back") title:@"" target:self action:@selector(leftBarButtonItemPressed:)];
     }
     return items;
 }

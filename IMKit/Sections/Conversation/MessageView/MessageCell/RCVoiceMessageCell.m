@@ -13,7 +13,7 @@
 #import "RCVoicePlayer.h"
 #import "RCMessageCellTool.h"
 #import "RCKitConfig.h"
-#define Voice_Height 40
+#define Voice_Height 30
 #define voice_Unread_View_Width 8
 #define Play_Voice_View_Width 16
 
@@ -107,7 +107,8 @@ static long s_messageId = 0;
     CGFloat __messagecontentview_height = Voice_Height;
 
     if (__messagecontentview_height < RCKitConfigCenter.ui.globalMessagePortraitSize.height) {
-        __messagecontentview_height = RCKitConfigCenter.ui.globalMessagePortraitSize.height;
+//        __messagecontentview_height = RCKitConfigCenter.ui.globalMessagePortraitSize.height;
+        __messagecontentview_height = 36;
     }
 
     __messagecontentview_height += extraHeight;

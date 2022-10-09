@@ -14,7 +14,7 @@
 #import "RCButton.h"
 #define HeadAndContentSpacing 8
 #define PortraitViewEdgeSpace 12//头像与屏幕边缘距离
-#define NameAndContentSpace 2
+#define NameAndContentSpace 5
 #define NameHeight 14
 @class RCloudImageView;
 

@@ -65,7 +65,8 @@
     RCCombineMessage *combineMessage = (RCCombineMessage *)model.content;
     __messagecontentview_height = [RCCombineMessageCell calculateCellHeight:combineMessage];
     if (__messagecontentview_height < RCKitConfigCenter.ui.globalMessagePortraitSize.height) {
-        __messagecontentview_height = RCKitConfigCenter.ui.globalMessagePortraitSize.height;
+//        __messagecontentview_height = RCKitConfigCenter.ui.globalMessagePortraitSize.height;
+        __messagecontentview_height = 36;
     }
     __messagecontentview_height += extraHeight;
     return CGSizeMake(collectionViewWidth, __messagecontentview_height);

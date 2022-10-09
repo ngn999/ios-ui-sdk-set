@@ -64,7 +64,8 @@ static long hq_messageId = 0;
     CGFloat __messagecontentview_height = Voice_Height;
 
     if (__messagecontentview_height < RCKitConfigCenter.ui.globalMessagePortraitSize.height) {
-        __messagecontentview_height = RCKitConfigCenter.ui.globalMessagePortraitSize.height;
+//        __messagecontentview_height = RCKitConfigCenter.ui.globalMessagePortraitSize.height;
+        __messagecontentview_height = 36;
     }
 
     __messagecontentview_height += extraHeight;
@@ -268,8 +269,11 @@ static long hq_messageId = 0;
     CGSize size = self.messageContentView.contentSize;
     size.width = audioBubbleWidth;
     if (size.height < RCKitConfigCenter.ui.globalMessagePortraitSize.height) {
-        size.height = RCKitConfigCenter.ui.globalMessagePortraitSize.height;
+//        size.height = RCKitConfigCenter.ui.globalMessagePortraitSize.height;
+//        size.height = 36;
     }
+    size.height = 36;
+
     self.messageContentView.contentSize = size;
     CGFloat voiceHeight = size.height;
     if ([RCKitUtility isRTL]) {

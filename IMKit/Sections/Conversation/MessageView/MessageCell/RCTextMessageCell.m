@@ -16,8 +16,8 @@
 #import "RCIMClient+Destructing.h"
 #define TEXT_SPACE_LEFT 12
 #define TEXT_SPACE_RIGHT 12
-#define TEXT_SPACE_TOP 9.5
-#define TEXT_SPACE_BOTTOM 9.5
+#define TEXT_SPACE_TOP 8
+#define TEXT_SPACE_BOTTOM 8
 #define DESTRUCT_TEXT_ICON_WIDTH 13
 #define DESTRUCT_TEXT_ICON_HEIGHT 28
 
@@ -273,7 +273,8 @@
         messagecontentview_height += 25;
     }
     if (messagecontentview_height < RCKitConfigCenter.ui.globalMessagePortraitSize.height) {
-        messagecontentview_height = RCKitConfigCenter.ui.globalMessagePortraitSize.height;
+//        messagecontentview_height = RCKitConfigCenter.ui.globalMessagePortraitSize.height;
+        messagecontentview_height = 36;
     }
     return messagecontentview_height;
 }

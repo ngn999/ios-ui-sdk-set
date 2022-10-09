@@ -103,7 +103,8 @@
         messagecontentview_height = [RCMessageCellTool getThumbnailImageSize:[self getDisplayImage:model]].height;
     }
     if (messagecontentview_height < RCKitConfigCenter.ui.globalMessagePortraitSize.height) {
-        messagecontentview_height = RCKitConfigCenter.ui.globalMessagePortraitSize.height;
+//        messagecontentview_height = RCKitConfigCenter.ui.globalMessagePortraitSize.height;
+        messagecontentview_height = 36;
     }
     return messagecontentview_height;
 }

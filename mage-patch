@@ -1,0 +1,571 @@
+Only in IMKit: Info.plist
+diff -ru IMKit/Sections/Conversation/InputBar/RCChatSessionInputBarControl.m ../IMKit/Sections/Conversation/InputBar/RCChatSessionInputBarControl.m
+--- IMKit/Sections/Conversation/InputBar/RCChatSessionInputBarControl.m	2022-10-08 20:03:11.000000000 +0800
++++ ../IMKit/Sections/Conversation/InputBar/RCChatSessionInputBarControl.m	2022-09-29 14:50:03.000000000 +0800
+@@ -29,7 +29,7 @@
+ //单个cell的高度是70（RCPlaginBoardCellSize）*2 + 上下padding的高度14*2 ＋
+ //上下两个图标之间的padding
+ #define Height_EmojBoardView 223.5f
+-#define Height_PluginBoardView 223.5f
++#define Height_PluginBoardView 110
+ #define Height_CommonPhrasesView 223.5f
+ #define RC_CommonPhrasesView_Height 38
+ 
+@@ -1307,10 +1307,10 @@
+         _emojiBoardView = [[RCEmojiBoardView alloc]
+             initWithFrame:CGRectMake(0, [self getBoardViewBottomOriginY], self.frame.size.width, Height_EmojBoardView)
+                  delegate:self];
+-        for (id<RCEmoticonTabSource> source in
+-             [[RCExtensionService sharedService] getEmoticonTabList:self.conversationType targetId:self.targetId]) {
+-            [_emojiBoardView addExtensionEmojiTab:source];
+-        };
++//        for (id<RCEmoticonTabSource> source in
++//             [[RCExtensionService sharedService] getEmoticonTabList:self.conversationType targetId:self.targetId]) {
++//            [_emojiBoardView addExtensionEmojiTab:source];
++//        };
+         _emojiBoardView.hidden = YES;
+         _emojiBoardView.delegate = self;
+         _emojiBoardView.conversationType = self.conversationType;
+@@ -1510,7 +1510,7 @@
+     if (bottom > 0) {
+         UIView * bottomAreaView= [[UIView alloc] initWithFrame:CGRectMake(0, self.containerView.bounds.size.height - bottom,
+                                                                           self.containerView.bounds.size.width, bottom)];
+-        bottomAreaView.backgroundColor = RCDYCOLOR(0xF8F8F8, 0x0b0b0c);
++        bottomAreaView.backgroundColor = HEXCOLOR(0xF9F9F9);
+         self.safeAreaView = bottomAreaView;
+         [self.containerView addSubview:bottomAreaView];
+     }
+Only in IMKit/Sections/Conversation/InputBar: Resource
+diff -ru IMKit/Sections/Conversation/MessageView/MessageCell/MessageBaseCell/RCMessageCell.h ../IMKit/Sections/Conversation/MessageView/MessageCell/MessageBaseCell/RCMessageCell.h
+--- IMKit/Sections/Conversation/MessageView/MessageCell/MessageBaseCell/RCMessageCell.h	2022-10-03 19:48:46.000000000 +0800
++++ ../IMKit/Sections/Conversation/MessageView/MessageCell/MessageBaseCell/RCMessageCell.h	2022-06-13 17:39:00.000000000 +0800
+@@ -14,7 +14,7 @@
+ #import "RCButton.h"
+ #define HeadAndContentSpacing 8
+ #define PortraitViewEdgeSpace 12//头像与屏幕边缘距离
+-#define NameAndContentSpace 2
++#define NameAndContentSpace 5
+ #define NameHeight 14
+ @class RCloudImageView;
+ 
+diff -ru IMKit/Sections/Conversation/MessageView/MessageCell/MessageBaseCell/RCMessageCell.m ../IMKit/Sections/Conversation/MessageView/MessageCell/MessageBaseCell/RCMessageCell.m
+--- IMKit/Sections/Conversation/MessageView/MessageCell/MessageBaseCell/RCMessageCell.m	2022-10-03 19:48:46.000000000 +0800
++++ ../IMKit/Sections/Conversation/MessageView/MessageCell/MessageBaseCell/RCMessageCell.m	2022-09-22 23:21:21.000000000 +0800
+@@ -26,6 +26,38 @@
+ #define DestructBtnWidth 20
+ #define StatusViewAndContentViewSpace 8
+ 
++#ifndef weakify
++    #if DEBUG
++        #if __has_feature(objc_arc)
++        #define weakify(object) autoreleasepool{} __weak __typeof__(object) weak##_##object = object;
++        #else
++        #define weakify(object) autoreleasepool{} __block __typeof__(object) block##_##object = object;
++        #endif
++    #else
++        #if __has_feature(objc_arc)
++        #define weakify(object) try{} @finally{} {} __weak __typeof__(object) weak##_##object = object;
++        #else
++        #define weakify(object) try{} @finally{} {} __block __typeof__(object) block##_##object = object;
++        #endif
++    #endif
++#endif
++
++#ifndef strongify
++    #if DEBUG
++        #if __has_feature(objc_arc)
++        #define strongify(object) autoreleasepool{} __typeof__(object) object = weak##_##object;
++        #else
++        #define strongify(object) autoreleasepool{} __typeof__(object) object = block##_##object;
++        #endif
++    #else
++        #if __has_feature(objc_arc)
++        #define strongify(object) try{} @finally{} __typeof__(object) object = weak##_##object;
++        #else
++        #define strongify(object) try{} @finally{} __typeof__(object) object = block##_##object;
++        #endif
++    #endif
++#endif
++
+ NSString *const KNotificationMessageBaseCellUpdateCanReceiptStatus =
+     @"KNotificationMessageBaseCellUpdateCanReceiptStatus";
+ @interface RCMessageCell()
+@@ -81,6 +113,8 @@
+         self.receiptStatusLabel.text = nil;
+     }
+ 
++    [self.portraitImageView setPlaceholderImage:RCResourceImage(@"icon_people_placeholder")];
++
+     if (model.messageDirection == MessageDirection_SEND && model.sentStatus == SentStatus_SENT) {
+         if (model.isCanSendReadReceipt) {
+             self.receiptView.hidden = NO;
+@@ -109,7 +143,6 @@
+         } else {
+             RCUserInfo *userInfo = [[RCUserInfoCacheManager sharedManager] getUserInfo:model.senderUserId];
+             model.userInfo = userInfo;
+-            [self.portraitImageView setPlaceholderImage:RCResourceImage(@"default_portrait_msg")];
+             if (userInfo) {
+                 [self.portraitImageView setImageURL:[NSURL URLWithString:userInfo.portraitUri]];
+                 [self.nicknameLabel setText:[RCKitUtility getDisplayName:userInfo]];
+@@ -322,63 +355,65 @@
+ }
+ 
+ - (void)registerUpdateLayoutIfNeed{
+-    __weak typeof(self) weakSelf = self;
++    @weakify(self)
+     [self.messageContentView registerFrameChangedEvent:^(CGRect frame) {
+-        if (weakSelf.model) {
++        @strongify(self)
++        if (self.model) {
+             if ([RCKitUtility isRTL]) {
+-                if (weakSelf.model.messageDirection == MessageDirection_SEND) {
++                if (self.model.messageDirection == MessageDirection_SEND) {
+                     CGRect statusFrame = CGRectMake(CGRectGetMaxX(frame)+StatusViewAndContentViewSpace, frame.origin.y, StatusContentViewWidth, frame.size.height);
+-                    weakSelf.statusContentView.frame = statusFrame;
+-                    weakSelf.receiptStatusLabel.frame = CGRectMake(0 , statusFrame.size.height - 12,statusFrame.size.width, 12);
+-                    if (weakSelf.model.conversationType == ConversationType_PRIVATE || weakSelf.model.conversationType == ConversationType_Encrypted) {
+-                        weakSelf.receiptView.frame = CGRectMake(0, statusFrame.size.height - 16, 16, 16);
+-                        [weakSelf.receiptView setImage:RCResourceImage(@"message_read_status") forState:UIControlStateNormal];
++                    self.statusContentView.frame = statusFrame;
++                    self.receiptStatusLabel.frame = CGRectMake(0 , statusFrame.size.height - 12,statusFrame.size.width, 12);
++                    if (self.model.conversationType == ConversationType_PRIVATE || self.model.conversationType == ConversationType_Encrypted) {
++                        self.receiptView.frame = CGRectMake(0, statusFrame.size.height - 16, 16, 16);
++                        [self.receiptView setImage:RCResourceImage(@"message_read_status") forState:UIControlStateNormal];
+                     } else {
+-                        weakSelf.receiptView.frame = CGRectMake(0, statusFrame.size.height - 16, 14, 14);
+-                        [weakSelf.receiptView setImage:RCResourceImage(@"receipt") forState:UIControlStateNormal];
++                        self.receiptView.frame = CGRectMake(0, statusFrame.size.height - 16, 14, 14);
++                        [self.receiptView setImage:RCResourceImage(@"receipt") forState:UIControlStateNormal];
+                     }
+-                    weakSelf.messageFailedStatusView.frame = CGRectMake(0, (statusFrame.size.height-16)/2, 16, 16);
++                    self.messageFailedStatusView.frame = CGRectMake(0, (statusFrame.size.height-16)/2, 16, 16);
+                 } else {
+                     CGRect statusFrame = CGRectMake(frame.origin.x - StatusContentViewWidth-StatusViewAndContentViewSpace, frame.origin.y, StatusContentViewWidth, frame.size.height);
+-                    weakSelf.statusContentView.frame = statusFrame;
+-                    weakSelf.messageFailedStatusView.frame = CGRectMake(statusFrame.size.width-16, (statusFrame.size.height-16)/2, 16, 16);
++                    self.statusContentView.frame = statusFrame;
++                    self.messageFailedStatusView.frame = CGRectMake(statusFrame.size.width-16, (statusFrame.size.height-16)/2, 16, 16);
+                 }
+-                weakSelf.messageActivityIndicatorView.frame = weakSelf.messageFailedStatusView.frame;
++                self.messageActivityIndicatorView.frame = self.messageFailedStatusView.frame;
+             } else {
+-                if (weakSelf.model.messageDirection == MessageDirection_SEND) {
++                if (self.model.messageDirection == MessageDirection_SEND) {
+                     CGRect statusFrame = CGRectMake(frame.origin.x - StatusContentViewWidth-StatusViewAndContentViewSpace, frame.origin.y, StatusContentViewWidth, frame.size.height);
+-                    weakSelf.statusContentView.frame = statusFrame;
+-                    weakSelf.receiptStatusLabel.frame = CGRectMake(0 , statusFrame.size.height - 12,statusFrame.size.width, 12);
+-                    if (weakSelf.model.conversationType == ConversationType_PRIVATE || weakSelf.model.conversationType == ConversationType_Encrypted) {
+-                        weakSelf.receiptView.frame = CGRectMake(StatusContentViewWidth - 16, statusFrame.size.height - 16, 16, 16);
+-                        [weakSelf.receiptView setImage:RCResourceImage(@"message_read_status") forState:UIControlStateNormal];
++                    self.statusContentView.frame = statusFrame;
++                    self.receiptStatusLabel.frame = CGRectMake(0 , statusFrame.size.height - 12,statusFrame.size.width, 12);
++                    if (self.model.conversationType == ConversationType_PRIVATE || self.model.conversationType == ConversationType_Encrypted) {
++                        [self.receiptView setImage:RCResourceImage(@"message_read_status") forState:UIControlStateNormal];
+                     } else {
+-                        weakSelf.receiptView.frame = CGRectMake(StatusContentViewWidth - 14, statusFrame.size.height - 16, 14, 14);
+-                        [weakSelf.receiptView setImage:RCResourceImage(@"receipt") forState:UIControlStateNormal];
++                        self.receiptView.frame = CGRectMake(StatusContentViewWidth - 14, statusFrame.size.height - 16, 14, 14);
++                        [self.receiptView setImage:RCResourceImage(@"receipt") forState:UIControlStateNormal];
+                     }
+-                    weakSelf.messageFailedStatusView.frame = CGRectMake(statusFrame.size.width-16, (statusFrame.size.height-16)/2, 16, 16);
+-                    weakSelf.messageActivityIndicatorView.frame = weakSelf.messageFailedStatusView.frame;
++                    self.messageFailedStatusView.frame = CGRectMake(statusFrame.size.width-16, (statusFrame.size.height-16)/2, 16, 16);
++                    self.messageActivityIndicatorView.frame = self.messageFailedStatusView.frame;
+                 } else {
+                     CGRect statusFrame = CGRectMake(CGRectGetMaxX(frame)+StatusViewAndContentViewSpace, frame.origin.y, StatusContentViewWidth, frame.size.height);
+-                    weakSelf.statusContentView.frame = statusFrame;
+-                    weakSelf.messageFailedStatusView.frame = CGRectMake(0, (statusFrame.size.height-16)/2, 16, 16);
+-                    weakSelf.messageActivityIndicatorView.frame = weakSelf.messageFailedStatusView.frame;
++                    self.statusContentView.frame = statusFrame;
++                    self.messageFailedStatusView.frame = CGRectMake(0, (statusFrame.size.height-16)/2, 16, 16);
++                    self.messageActivityIndicatorView.frame = self.messageFailedStatusView.frame;
+                 }
+             }
+-            if (weakSelf.showBubbleBackgroundView) {
+-                weakSelf.bubbleBackgroundView.frame = weakSelf.messageContentView.bounds;
++            if (self.showBubbleBackgroundView) {
++                self.bubbleBackgroundView.frame = self.messageContentView.bounds;
+             }
+         }
+     }];
+     
+     [self.messageContentView registerSizeChangedEvent:^(CGSize size) {
+-        if (weakSelf.model){
++        @strongify(self)
++
++        if (self.model){
+             CGRect rect = CGRectMake(0, 0, size.width, size.height);
+             if ([RCKitUtility isRTL]) {
+-                if(weakSelf.model.messageDirection == MessageDirection_RECEIVE) {
+-                    rect.origin.x = weakSelf.baseContentView.bounds.size.width - (size.width + HeadAndContentSpacing + RCKitConfigCenter.ui.globalMessagePortraitSize.width + PortraitViewEdgeSpace),
++                if(self.model.messageDirection == MessageDirection_RECEIVE) {
++                    (void)(rect.origin.x = self.baseContentView.bounds.size.width - (size.width + HeadAndContentSpacing + RCKitConfigCenter.ui.globalMessagePortraitSize.width + PortraitViewEdgeSpace)),
+                     rect.origin.y = PortraitImageViewTop;
+-                    if (weakSelf.model.isDisplayNickname) {
++                    if (self.model.isDisplayNickname) {
+                         rect.origin.y = PortraitImageViewTop + NameHeight + NameAndContentSpace;
+                     }
+                 } else {
+@@ -386,20 +421,24 @@
+                     rect.origin.y = PortraitImageViewTop;
+                 }
+             } else {
+-                if(weakSelf.model.messageDirection == MessageDirection_RECEIVE) {
++                if(self.model.messageDirection == MessageDirection_RECEIVE) {
+                     rect.origin.x = PortraitViewEdgeSpace + RCKitConfigCenter.ui.globalMessagePortraitSize.width + HeadAndContentSpacing;
+                     CGFloat messageContentViewY = PortraitImageViewTop;
+-                    if (weakSelf.model.isDisplayNickname) {
++                    if (self.model.isDisplayNickname) {
+                         messageContentViewY = PortraitImageViewTop + NameHeight + NameAndContentSpace;
+                     }
+                     rect.origin.y = messageContentViewY;
+                 } else {
+-                    rect.origin.x = weakSelf.baseContentView.bounds.size.width - (size.width + HeadAndContentSpacing + RCKitConfigCenter.ui.globalMessagePortraitSize.width + PortraitViewEdgeSpace);
+-                    rect.origin.y = PortraitImageViewTop;
++                    rect.origin.x = self.baseContentView.bounds.size.width - (size.width + HeadAndContentSpacing + RCKitConfigCenter.ui.globalMessagePortraitSize.width + PortraitViewEdgeSpace);
++                    if (size.height < self.portraitImageView.frame.size.height) {
++                        rect.origin.y = (self.portraitImageView.frame.size.height-size.height)/2;
++                    } else {
++                        rect.origin.y = PortraitImageViewTop;
++                    }
+                 }
+             }
+-            weakSelf.messageContentView.frame = rect;
+-            [weakSelf setDestructViewLayout];
++            self.messageContentView.frame = rect;
++            [self setDestructViewLayout];
+         }
+     }];
+ }
+@@ -439,6 +478,7 @@
+                           RCKitConfigCenter.ui.globalMessagePortraitSize.height);
+                self.nicknameLabel.frame =
+                CGRectMake(portraitImageX + self.portraitImageView.bounds.size.width + HeadAndContentSpacing, PortraitImageViewTop, DefaultMessageContentViewWidth, NameHeight);
++               self.messageContentView.backgroundColor = UIColor.clearColor;
+            } else { // owner
+                self.nicknameLabel.hidden = YES;
+                CGFloat portraitImageX =
+@@ -446,6 +486,8 @@
+                self.portraitImageView.frame =
+                CGRectMake(portraitImageX, PortraitImageViewTop, RCKitConfigCenter.ui.globalMessagePortraitSize.width,
+                           RCKitConfigCenter.ui.globalMessagePortraitSize.height);
++//               self.messageContentView.backgroundColor = [UIColor colorWithRed:125/255.0 green:232/255.0 blue:103/255.0 alpha:1];
++               self.messageContentView.backgroundColor = UIColor.clearColor;
+            }
+            self.messageContentView.contentSize = CGSizeMake(DefaultMessageContentViewWidth,self.baseContentView.bounds.size.height - ContentViewBottom);
+     }
+@@ -798,7 +840,7 @@
+ 
+ - (RCloudImageView *)portraitImageView{
+     if (!_portraitImageView) {
+-        _portraitImageView = [[RCloudImageView alloc] initWithPlaceholderImage:RCResourceImage(@"default_portrait_msg")];
++        _portraitImageView = [[RCloudImageView alloc] initWithPlaceholderImage:RCResourceImage(@"")];
+         //点击头像
+         UITapGestureRecognizer *portraitTap =
+             [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(tapUserPortaitEvent:)];
+@@ -847,6 +889,7 @@
+         tap.numberOfTouchesRequired = 1;
+         [_messageContentView addGestureRecognizer:tap];
+         _messageContentView.userInteractionEnabled = YES;
++        _messageContentView.layer.cornerRadius = 8;
+     }
+     return _messageContentView;
+ }
+diff -ru IMKit/Sections/Conversation/MessageView/MessageCell/MessageCellTool/RCMessageCellTool.m ../IMKit/Sections/Conversation/MessageView/MessageCell/MessageCellTool/RCMessageCellTool.m
+--- IMKit/Sections/Conversation/MessageView/MessageCell/MessageCellTool/RCMessageCellTool.m	2022-10-08 20:03:11.000000000 +0800
++++ ../IMKit/Sections/Conversation/MessageView/MessageCell/MessageCellTool/RCMessageCellTool.m	2022-09-16 17:32:24.000000000 +0800
+@@ -133,11 +133,10 @@
+                  }
+         };
+     }
+-    
+ }
+ 
+ #pragma mark - Private Methods
+ + (UIImage *)getResizableImage:(UIImage *)image{
+-    return [image resizableImageWithCapInsets:UIEdgeInsetsMake(image.size.height * 0.5, image.size.width * 0.5, image.size.height * 0.5, image.size.width * 0.5)];
++    return [image resizableImageWithCapInsets:UIEdgeInsetsMake(30, image.size.width/2, 30, image.size.width/2) resizingMode:UIImageResizingModeStretch];
+ }
+ @end
+diff -ru IMKit/Sections/Conversation/MessageView/MessageCell/RCCombineMessageCell.m ../IMKit/Sections/Conversation/MessageView/MessageCell/RCCombineMessageCell.m
+--- IMKit/Sections/Conversation/MessageView/MessageCell/RCCombineMessageCell.m	2022-10-03 19:48:46.000000000 +0800
++++ ../IMKit/Sections/Conversation/MessageView/MessageCell/RCCombineMessageCell.m	2022-07-27 17:37:26.000000000 +0800
+@@ -65,7 +65,8 @@
+     RCCombineMessage *combineMessage = (RCCombineMessage *)model.content;
+     __messagecontentview_height = [RCCombineMessageCell calculateCellHeight:combineMessage];
+     if (__messagecontentview_height < RCKitConfigCenter.ui.globalMessagePortraitSize.height) {
+-        __messagecontentview_height = RCKitConfigCenter.ui.globalMessagePortraitSize.height;
++//        __messagecontentview_height = RCKitConfigCenter.ui.globalMessagePortraitSize.height;
++        __messagecontentview_height = 36;
+     }
+     __messagecontentview_height += extraHeight;
+     return CGSizeMake(collectionViewWidth, __messagecontentview_height);
+diff -ru IMKit/Sections/Conversation/MessageView/MessageCell/RCHQVoiceMessageCell.m ../IMKit/Sections/Conversation/MessageView/MessageCell/RCHQVoiceMessageCell.m
+--- IMKit/Sections/Conversation/MessageView/MessageCell/RCHQVoiceMessageCell.m	2022-10-03 19:48:46.000000000 +0800
++++ ../IMKit/Sections/Conversation/MessageView/MessageCell/RCHQVoiceMessageCell.m	2022-07-29 11:54:53.000000000 +0800
+@@ -64,7 +64,8 @@
+     CGFloat __messagecontentview_height = Voice_Height;
+ 
+     if (__messagecontentview_height < RCKitConfigCenter.ui.globalMessagePortraitSize.height) {
+-        __messagecontentview_height = RCKitConfigCenter.ui.globalMessagePortraitSize.height;
++//        __messagecontentview_height = RCKitConfigCenter.ui.globalMessagePortraitSize.height;
++        __messagecontentview_height = 36;
+     }
+ 
+     __messagecontentview_height += extraHeight;
+@@ -268,8 +269,11 @@
+     CGSize size = self.messageContentView.contentSize;
+     size.width = audioBubbleWidth;
+     if (size.height < RCKitConfigCenter.ui.globalMessagePortraitSize.height) {
+-        size.height = RCKitConfigCenter.ui.globalMessagePortraitSize.height;
++//        size.height = RCKitConfigCenter.ui.globalMessagePortraitSize.height;
++//        size.height = 36;
+     }
++    size.height = 36;
++
+     self.messageContentView.contentSize = size;
+     CGFloat voiceHeight = size.height;
+     if ([RCKitUtility isRTL]) {
+diff -ru IMKit/Sections/Conversation/MessageView/MessageCell/RCImageMessageCell.m ../IMKit/Sections/Conversation/MessageView/MessageCell/RCImageMessageCell.m
+--- IMKit/Sections/Conversation/MessageView/MessageCell/RCImageMessageCell.m	2022-10-03 19:48:46.000000000 +0800
++++ ../IMKit/Sections/Conversation/MessageView/MessageCell/RCImageMessageCell.m	2022-07-27 17:37:02.000000000 +0800
+@@ -103,7 +103,8 @@
+         messagecontentview_height = [RCMessageCellTool getThumbnailImageSize:[self getDisplayImage:model]].height;
+     }
+     if (messagecontentview_height < RCKitConfigCenter.ui.globalMessagePortraitSize.height) {
+-        messagecontentview_height = RCKitConfigCenter.ui.globalMessagePortraitSize.height;
++//        messagecontentview_height = RCKitConfigCenter.ui.globalMessagePortraitSize.height;
++        messagecontentview_height = 36;
+     }
+     return messagecontentview_height;
+ }
+diff -ru IMKit/Sections/Conversation/MessageView/MessageCell/RCTextMessageCell.m ../IMKit/Sections/Conversation/MessageView/MessageCell/RCTextMessageCell.m
+--- IMKit/Sections/Conversation/MessageView/MessageCell/RCTextMessageCell.m	2022-10-03 19:48:46.000000000 +0800
++++ ../IMKit/Sections/Conversation/MessageView/MessageCell/RCTextMessageCell.m	2022-07-27 17:37:02.000000000 +0800
+@@ -16,8 +16,8 @@
+ #import "RCIMClient+Destructing.h"
+ #define TEXT_SPACE_LEFT 12
+ #define TEXT_SPACE_RIGHT 12
+-#define TEXT_SPACE_TOP 9.5
+-#define TEXT_SPACE_BOTTOM 9.5
++#define TEXT_SPACE_TOP 8
++#define TEXT_SPACE_BOTTOM 8
+ #define DESTRUCT_TEXT_ICON_WIDTH 13
+ #define DESTRUCT_TEXT_ICON_HEIGHT 28
+ 
+@@ -273,7 +273,8 @@
+         messagecontentview_height += 25;
+     }
+     if (messagecontentview_height < RCKitConfigCenter.ui.globalMessagePortraitSize.height) {
+-        messagecontentview_height = RCKitConfigCenter.ui.globalMessagePortraitSize.height;
++//        messagecontentview_height = RCKitConfigCenter.ui.globalMessagePortraitSize.height;
++        messagecontentview_height = 36;
+     }
+     return messagecontentview_height;
+ }
+diff -ru IMKit/Sections/Conversation/MessageView/MessageCell/RCVoiceMessageCell.m ../IMKit/Sections/Conversation/MessageView/MessageCell/RCVoiceMessageCell.m
+--- IMKit/Sections/Conversation/MessageView/MessageCell/RCVoiceMessageCell.m	2022-10-03 19:48:46.000000000 +0800
++++ ../IMKit/Sections/Conversation/MessageView/MessageCell/RCVoiceMessageCell.m	2022-07-27 17:37:02.000000000 +0800
+@@ -13,7 +13,7 @@
+ #import "RCVoicePlayer.h"
+ #import "RCMessageCellTool.h"
+ #import "RCKitConfig.h"
+-#define Voice_Height 40
++#define Voice_Height 30
+ #define voice_Unread_View_Width 8
+ #define Play_Voice_View_Width 16
+ 
+@@ -107,7 +107,8 @@
+     CGFloat __messagecontentview_height = Voice_Height;
+ 
+     if (__messagecontentview_height < RCKitConfigCenter.ui.globalMessagePortraitSize.height) {
+-        __messagecontentview_height = RCKitConfigCenter.ui.globalMessagePortraitSize.height;
++//        __messagecontentview_height = RCKitConfigCenter.ui.globalMessagePortraitSize.height;
++        __messagecontentview_height = 36;
+     }
+ 
+     __messagecontentview_height += extraHeight;
+diff -ru IMKit/Sections/Conversation/RCConversationViewController.m ../IMKit/Sections/Conversation/RCConversationViewController.m
+--- IMKit/Sections/Conversation/RCConversationViewController.m	2022-10-08 20:03:11.000000000 +0800
++++ ../IMKit/Sections/Conversation/RCConversationViewController.m	2022-10-01 15:01:17.000000000 +0800
+@@ -1869,40 +1869,40 @@
+     __weak typeof(self) __weakself = self;
+     //如果消息是选择状态，不更新leftBar
+     if (self.allowsMessageCellSelection) {
+-        dispatch_async(dispatch_get_main_queue(), ^{
+-            __weakself.rightBarButtonItems = __weakself.navigationItem.rightBarButtonItems;
+-            __weakself.leftBarButtonItems = __weakself.navigationItem.leftBarButtonItems;
+-            __weakself.navigationItem.rightBarButtonItems = nil;
+-            __weakself.navigationItem.leftBarButtonItems = nil;
+-            UIBarButtonItem *left =
+-                [[UIBarButtonItem alloc] initWithTitle:RCLocalizedString(@"Cancel")
+-                                                 style:UIBarButtonItemStylePlain
+-                                                target:self
+-                                                action:@selector(onCancelMultiSelectEvent:)];
+-
+-            [left setTintColor:RCKitConfigCenter.ui.globalNavigationBarTintColor];
+-            self.navigationItem.leftBarButtonItem = left;
+-        });
++//        dispatch_async(dispatch_get_main_queue(), ^{
++//            __weakself.rightBarButtonItems = __weakself.navigationItem.rightBarButtonItems;
++//            __weakself.leftBarButtonItems = __weakself.navigationItem.leftBarButtonItems;
++//            __weakself.navigationItem.rightBarButtonItems = nil;
++//            __weakself.navigationItem.leftBarButtonItems = nil;
++//            UIBarButtonItem *left =
++//                [[UIBarButtonItem alloc] initWithTitle:RCLocalizedString(@"Cancel")
++//                                                 style:UIBarButtonItemStylePlain
++//                                                target:self
++//                                                action:@selector(onCancelMultiSelectEvent:)];
++//
++//            [left setTintColor:RCKitConfigCenter.ui.globalNavigationBarTintColor];
++//            self.navigationItem.leftBarButtonItem = left;
++//        });
+     } else {
+         if(!self.displayConversationTypeArray) {
+-            dispatch_async(dispatch_get_main_queue(), ^{
+-                __weakself.navigationItem.leftBarButtonItems = __weakself.leftBarButtonItems;
+-                __weakself.leftBarButtonItems = nil;
+-                if (__weakself.conversationType != ConversationType_Encrypted && __weakself.rightBarButtonItems) {
+-                    __weakself.navigationItem.rightBarButtonItems = __weakself.rightBarButtonItems;
+-                    __weakself.rightBarButtonItems = nil;
+-                }
+-            });
++//            dispatch_async(dispatch_get_main_queue(), ^{
++//                __weakself.navigationItem.leftBarButtonItems = __weakself.leftBarButtonItems;
++//                __weakself.leftBarButtonItems = nil;
++//                if (__weakself.conversationType != ConversationType_Encrypted && __weakself.rightBarButtonItems) {
++//                    __weakself.navigationItem.rightBarButtonItems = __weakself.rightBarButtonItems;
++//                    __weakself.rightBarButtonItems = nil;
++//                }
++//            });
+             return;
+         }
+-        dispatch_async(dispatch_get_main_queue(), ^{
+-            [__weakself.navigationItem setLeftBarButtonItems:[__weakself getLeftBackButton]];
+-            __weakself.leftBarButtonItems = nil;
+-            if (__weakself.rightBarButtonItems) {
+-                __weakself.navigationItem.rightBarButtonItems = __weakself.rightBarButtonItems;
+-                __weakself.rightBarButtonItems = nil;
+-            }
+-        });
++//        dispatch_async(dispatch_get_main_queue(), ^{
++//            [__weakself.navigationItem setLeftBarButtonItems:[__weakself getLeftBackButton]];
++//            __weakself.leftBarButtonItems = nil;
++//            if (__weakself.rightBarButtonItems) {
++//                __weakself.navigationItem.rightBarButtonItems = __weakself.rightBarButtonItems;
++//                __weakself.rightBarButtonItems = nil;
++//            }
++//        });
+     }
+ }
+ 
+@@ -2196,7 +2196,7 @@
+                                    action:@selector(onTranslateMessageCell:)];
+         [items addObject:transItem];
+     }
+-    if (self.conversationType != ConversationType_SYSTEM) {
++    if (self.conversationType != ConversationType_GROUP) {
+         [items addObject:multiSelectItem];
+     }
+     
+@@ -2239,9 +2239,10 @@
+         [userId isEqualToString:[RCIM sharedRCIM].currentUserInfo.userId]) {
+         return;
+     }
+-
+-    [self.chatSessionInputBarControl addMentionedUser:[self getSelectingUserInfo:userId]];
+-    [self.chatSessionInputBarControl.inputTextView becomeFirstResponder];
++    if (userId) {
++        [self.chatSessionInputBarControl addMentionedUser:[self getSelectingUserInfo:userId]];
++        [self.chatSessionInputBarControl.inputTextView becomeFirstResponder];
++    }
+ }
+ 
+ #pragma mark 内部点击方法
+@@ -3362,9 +3363,9 @@
+     }
+     NSArray *items;
+     if (self.conversationType == ConversationType_CUSTOMERSERVICE) {
+-        items = [RCKitUtility getLeftNavigationItems:RCResourceImage(@"navigator_btn_back") title:backString target:self action:@selector(customerServiceLeftCurrentViewController)];
++        items = [RCKitUtility getLeftNavigationItems:RCResourceImage(@"navigator_btn_back") title:@"" target:self action:@selector(customerServiceLeftCurrentViewController)];
+     } else {
+-        items = [RCKitUtility getLeftNavigationItems:RCResourceImage(@"navigator_btn_back") title:backString target:self action:@selector(leftBarButtonItemPressed:)];
++        items = [RCKitUtility getLeftNavigationItems:RCResourceImage(@"navigator_btn_back") title:@"" target:self action:@selector(leftBarButtonItemPressed:)];
+     }
+     return items;
+ }
+diff -ru IMKit/Sections/ConversationList/RCConversationListViewController.m ../IMKit/Sections/ConversationList/RCConversationListViewController.m
+--- IMKit/Sections/ConversationList/RCConversationListViewController.m	2022-10-08 20:03:11.000000000 +0800
++++ ../IMKit/Sections/ConversationList/RCConversationListViewController.m	2022-09-22 16:20:37.000000000 +0800
+@@ -246,11 +246,62 @@
+     }
+ }
+ 
+-- (NSString *)tableView:(UITableView *)tableView
+-    titleForDeleteConfirmationButtonForRowAtIndexPath:(NSIndexPath *)indexPath {
+-    return RCLocalizedString(@"Delete");
++- (NSArray<UITableViewRowAction *> *)tableView:(UITableView *)tableView editActionsForRowAtIndexPath:(NSIndexPath *)indexPath {
++    
++    RCConversationModel *model = self.dataSource.dataList[indexPath.row];
++
++    if (model.conversationType == ConversationType_GROUP) {
++        if (model.isTop) {
++            UITableViewRowAction *topAction = [UITableViewRowAction rowActionWithStyle:UITableViewRowActionStyleDestructive title:RCLocalizedString(@"session_top_cancel") handler:^(UITableViewRowAction * _Nonnull action, NSIndexPath * _Nonnull indexPath) {
++                if ([[RCChannelClient sharedChannelManager] setConversationToTop:model.conversationType targetId:model.targetId channelId:model.channelId isTop:NO]) {
++                    [self refreshConversationTableViewIfNeeded];
++                }
++            }];
++            topAction.backgroundColor = RGBCOLOR(168, 233, 122);
++            return @[topAction];
++        } else {
++            UITableViewRowAction *topAction = [UITableViewRowAction rowActionWithStyle:UITableViewRowActionStyleDestructive title:RCLocalizedString(@"session_top") handler:^(UITableViewRowAction * _Nonnull action, NSIndexPath * _Nonnull indexPath) {
++                if ([[RCChannelClient sharedChannelManager] setConversationToTop:model.conversationType targetId:model.targetId channelId:model.channelId isTop:YES]) {
++                    [self refreshConversationTableViewIfNeeded];
++                }
++            }];
++            topAction.backgroundColor = RGBCOLOR(168, 233, 122);
++            return @[topAction];
++        }
++    } else if (model.conversationType == ConversationType_PRIVATE) {
++        UITableViewRowAction *deletAction = [UITableViewRowAction rowActionWithStyle:UITableViewRowActionStyleDestructive title:RCLocalizedString(@"session_delete") handler:^(UITableViewRowAction * _Nonnull action, NSIndexPath * _Nonnull indexPath) {
++            
++            if ([[RCChannelClient sharedChannelManager] removeConversation:model.conversationType targetId:model.targetId channelId:model.channelId]) {
++                [self refreshConversationTableViewIfNeeded];
++            }
++        }];
++        if (model.isTop) {
++            UITableViewRowAction *topAction = [UITableViewRowAction rowActionWithStyle:UITableViewRowActionStyleDestructive title:RCLocalizedString(@"session_top_cancel") handler:^(UITableViewRowAction * _Nonnull action, NSIndexPath * _Nonnull indexPath) {
++                if ([[RCChannelClient sharedChannelManager] setConversationToTop:model.conversationType targetId:model.targetId channelId:model.channelId isTop:NO]) {
++                    [self refreshConversationTableViewIfNeeded];
++                }
++            }];
++            topAction.backgroundColor = RGBCOLOR(168, 233, 122);
++            return @[deletAction,topAction];
++        } else {
++            UITableViewRowAction *topAction = [UITableViewRowAction rowActionWithStyle:UITableViewRowActionStyleDestructive title:RCLocalizedString(@"session_top") handler:^(UITableViewRowAction * _Nonnull action, NSIndexPath * _Nonnull indexPath) {
++                if ([[RCChannelClient sharedChannelManager] setConversationToTop:model.conversationType targetId:model.targetId channelId:model.channelId isTop:YES]) {
++                    [self refreshConversationTableViewIfNeeded];
++                }
++            }];
++            topAction.backgroundColor = RGBCOLOR(168, 233, 122);
++            return @[deletAction,topAction];
++        }
++    } else {
++        return nil;
++    }
+ }
+ 
++//- (NSString *)tableView:(UITableView *)tableView
++//    titleForDeleteConfirmationButtonForRowAtIndexPath:(NSIndexPath *)indexPath {
++//    return RCLocalizedString(@"Delete");
++//}
++
+ #pragma mark - Target action
+ - (void)loadMore {
+     __weak typeof(self) ws = self;
+Only in IMKit: Supporting Files
+Only in IMKit/Utility/FMDB: LICENSE.txt
+Only in IMKit/Utility/MBProgressHUD: LICENSE
+Only in IMKit/Utility/MJRefresh: LICENSE
+Only in IMKit/Utility/Pinyin: LICENSE
+Only in IMKit/Utility/RCloudImageLoading/EGOCache: LICENSE

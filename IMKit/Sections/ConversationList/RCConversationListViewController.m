@@ -246,10 +246,61 @@
     }
 }
 
-- (NSString *)tableView:(UITableView *)tableView
-    titleForDeleteConfirmationButtonForRowAtIndexPath:(NSIndexPath *)indexPath {
-    return RCLocalizedString(@"Delete");
+- (NSArray<UITableViewRowAction *> *)tableView:(UITableView *)tableView editActionsForRowAtIndexPath:(NSIndexPath *)indexPath {
+    
+    RCConversationModel *model = self.dataSource.dataList[indexPath.row];
+
+    if (model.conversationType == ConversationType_GROUP) {
+        if (model.isTop) {
+            UITableViewRowAction *topAction = [UITableViewRowAction rowActionWithStyle:UITableViewRowActionStyleDestructive title:RCLocalizedString(@"session_top_cancel") handler:^(UITableViewRowAction * _Nonnull action, NSIndexPath * _Nonnull indexPath) {
+                if ([[RCChannelClient sharedChannelManager] setConversationToTop:model.conversationType targetId:model.targetId channelId:model.channelId isTop:NO]) {
+                    [self refreshConversationTableViewIfNeeded];
+                }
+            }];
+            topAction.backgroundColor = RGBCOLOR(168, 233, 122);
+            return @[topAction];
+        } else {
+            UITableViewRowAction *topAction = [UITableViewRowAction rowActionWithStyle:UITableViewRowActionStyleDestructive title:RCLocalizedString(@"session_top") handler:^(UITableViewRowAction * _Nonnull action, NSIndexPath * _Nonnull indexPath) {
+                if ([[RCChannelClient sharedChannelManager] setConversationToTop:model.conversationType targetId:model.targetId channelId:model.channelId isTop:YES]) {
+                    [self refreshConversationTableViewIfNeeded];
+                }
+            }];
+            topAction.backgroundColor = RGBCOLOR(168, 233, 122);
+            return @[topAction];
+        }
+    } else if (model.conversationType == ConversationType_PRIVATE) {
+        UITableViewRowAction *deletAction = [UITableViewRowAction rowActionWithStyle:UITableViewRowActionStyleDestructive title:RCLocalizedString(@"session_delete") handler:^(UITableViewRowAction * _Nonnull action, NSIndexPath * _Nonnull indexPath) {
+            
+            if ([[RCChannelClient sharedChannelManager] removeConversation:model.conversationType targetId:model.targetId channelId:model.channelId]) {
+                [self refreshConversationTableViewIfNeeded];
+            }
+        }];
+        if (model.isTop) {
+            UITableViewRowAction *topAction = [UITableViewRowAction rowActionWithStyle:UITableViewRowActionStyleDestructive title:RCLocalizedString(@"session_top_cancel") handler:^(UITableViewRowAction * _Nonnull action, NSIndexPath * _Nonnull indexPath) {
+                if ([[RCChannelClient sharedChannelManager] setConversationToTop:model.conversationType targetId:model.targetId channelId:model.channelId isTop:NO]) {
+                    [self refreshConversationTableViewIfNeeded];
+                }
+            }];
+            topAction.backgroundColor = RGBCOLOR(168, 233, 122);
+            return @[deletAction,topAction];
+        } else {
+            UITableViewRowAction *topAction = [UITableViewRowAction rowActionWithStyle:UITableViewRowActionStyleDestructive title:RCLocalizedString(@"session_top") handler:^(UITableViewRowAction * _Nonnull action, NSIndexPath * _Nonnull indexPath) {
+                if ([[RCChannelClient sharedChannelManager] setConversationToTop:model.conversationType targetId:model.targetId channelId:model.channelId isTop:YES]) {
+                    [self refreshConversationTableViewIfNeeded];
+                }
+            }];
+            topAction.backgroundColor = RGBCOLOR(168, 233, 122);
+            return @[deletAction,topAction];
+        }
+    } else {
+        return nil;
+    }
 }
+
+//- (NSString *)tableView:(UITableView *)tableView
+//    titleForDeleteConfirmationButtonForRowAtIndexPath:(NSIndexPath *)indexPath {
+//    return RCLocalizedString(@"Delete");
+//}
 
 #pragma mark - Target action
 - (void)loadMore {

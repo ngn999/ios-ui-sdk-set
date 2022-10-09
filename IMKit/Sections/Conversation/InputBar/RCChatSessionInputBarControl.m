@@ -29,7 +29,7 @@
 //单个cell的高度是70（RCPlaginBoardCellSize）*2 + 上下padding的高度14*2 ＋
 //上下两个图标之间的padding
 #define Height_EmojBoardView 223.5f
-#define Height_PluginBoardView 223.5f
+#define Height_PluginBoardView 110
 #define Height_CommonPhrasesView 223.5f
 #define RC_CommonPhrasesView_Height 38
 
@@ -1307,10 +1307,10 @@
         _emojiBoardView = [[RCEmojiBoardView alloc]
             initWithFrame:CGRectMake(0, [self getBoardViewBottomOriginY], self.frame.size.width, Height_EmojBoardView)
                  delegate:self];
-        for (id<RCEmoticonTabSource> source in
-             [[RCExtensionService sharedService] getEmoticonTabList:self.conversationType targetId:self.targetId]) {
-            [_emojiBoardView addExtensionEmojiTab:source];
-        };
+//        for (id<RCEmoticonTabSource> source in
+//             [[RCExtensionService sharedService] getEmoticonTabList:self.conversationType targetId:self.targetId]) {
+//            [_emojiBoardView addExtensionEmojiTab:source];
+//        };
         _emojiBoardView.hidden = YES;
         _emojiBoardView.delegate = self;
         _emojiBoardView.conversationType = self.conversationType;
@@ -1510,7 +1510,7 @@
     if (bottom > 0) {
         UIView * bottomAreaView= [[UIView alloc] initWithFrame:CGRectMake(0, self.containerView.bounds.size.height - bottom,
                                                                           self.containerView.bounds.size.width, bottom)];
-        bottomAreaView.backgroundColor = RCDYCOLOR(0xF8F8F8, 0x0b0b0c);
+        bottomAreaView.backgroundColor = HEXCOLOR(0xF9F9F9);
         self.safeAreaView = bottomAreaView;
         [self.containerView addSubview:bottomAreaView];
     }

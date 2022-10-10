@@ -114,6 +114,9 @@
 "NoPhotoTitle"="无照片或视频";
 "NoPhotoDesc"="您可以使用相机拍摄照片和视频，或使用iTunes将照片和视频同步到iPhone.";
 "SetToTop"="置顶聊天";
+"session_top"="置顶";
+"session_top_cancel"="取消置顶";
+"session_delete"="删除";
 "NewMsgNotification"="新消息通知";
 "ClearRecord"="清除聊天记录";
 "CanNotRemoveSelf"="不能移除自己";
@@ -177,8 +180,8 @@
 "Wait"="请稍等...";
 "Searching"="搜索中...";
 "Search"="搜索:";
-"Right_unReadMessage"="%@ 条新消息";
-"HistoryMessageTip"="以上是历史消息";
+"Right_unReadMessage"="%@";
+"HistoryMessageTip"="未读消息";
 "DISCUSSION"="讨论组";
 "DateFormat"="MM月dd日";
 "MessageHasRead"="已读";

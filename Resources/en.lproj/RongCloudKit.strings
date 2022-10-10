@@ -114,6 +114,9 @@
 "NoPhotoTitle"="No Photos or Videos";
 "NoPhotoDesc"="You can use your camera to take photos and videos, or use iTunes to sync photos and videos to your iPhone.";
 "SetToTop"="Stick to Top";
+"session_top"="Sticky on Top";
+"session_top_cancel"="Remove from Top";
+"session_delete"="Delete Chat";
 "NewMsgNotification"="New Message Notification";
 "ClearRecord"="Clear Chat History";
 "CanNotRemoveSelf"="Cannot remove yourself";
@@ -177,8 +180,8 @@
 "Wait"="Please wait a moment...";
 "Searching"="Searching...";
 "Search"="Search:";
-"Right_unReadMessage"="%@ new messages";
-"HistoryMessageTip"="Above is the historical messages";
+"Right_unReadMessage"="%@";
+"HistoryMessageTip"="Unread Messages";
 "DISCUSSION"="Discussion";
 "DateFormat"="MM-dd";
 "MessageHasRead"="Read";
@@ -272,7 +275,7 @@
 "Reference"="Quote";
 "Translate"="Translate";
 "CanNotRecall" = "This message has passed the recall time limit. Unable to recall.";
-"TranslateFailed" = "翻译失败，请重试";
+"TranslateFailed" = "Translation failed. Please try again";
 "ChatFiles"="Chat Files";
 "CannotUploadFiles"="Cannot upload 0KB file.";
 "DownloadFailFromiCloud"="Download Fail From iCloud";

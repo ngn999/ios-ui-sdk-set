@@ -29,7 +29,7 @@
 //单个cell的高度是70（RCPlaginBoardCellSize）*2 + 上下padding的高度14*2 ＋
 //上下两个图标之间的padding
 #define Height_EmojBoardView 223.5f
-#define Height_PluginBoardView 110
+#define Height_PluginBoardView 200
 #define Height_CommonPhrasesView 223.5f
 #define RC_CommonPhrasesView_Height 38
 

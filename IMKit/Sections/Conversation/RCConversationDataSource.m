@@ -1030,12 +1030,12 @@ static BOOL msgRoamingServiceAvailable = YES;
 
 - (void)scrollToLoadMoreHistoryMessage {
     self.isIndicatorLoading = YES;
-    [self performSelector:@selector(loadMoreHistoryMessage) withObject:nil afterDelay:0.5f];
+    [self performSelector:@selector(loadMoreHistoryMessage) withObject:nil afterDelay:0.1f];
 }
 
 - (void)scrollToLoadMoreNewerMessage {
     self.isIndicatorLoading = YES;
-    [self performSelector:@selector(loadMoreNewerMessage) withObject:nil afterDelay:0.5f];
+    [self performSelector:@selector(loadMoreNewerMessage) withObject:nil afterDelay:0.1f];
 }
 
 - (void)scrollToSuitablePosition {

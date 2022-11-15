@@ -252,10 +252,21 @@ UICollectionViewDataSource
             _popTableView.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
         }
         
-        [_popTableView registerNib:[UINib nibWithNibName:RXPopMenuCellID bundle:[NSBundle mainBundle]]
+        [_popTableView registerNib:[UINib nibWithNibName:RXPopMenuCellID bundle:[self rcBundle]]
             forCellReuseIdentifier:RXPopMenuCellID];
     }
     return _popTableView;
+}
+
+-(NSBundle *)rcBundle {
+    NSBundle *rcBundle = nil;
+    for (NSBundle *bundle in  NSBundle.allBundles) {
+        NSString *path = [bundle pathForResource:@"RongCloud" ofType:@"bundle"];
+        if (path.length > 0) {
+            rcBundle = [NSBundle bundleWithPath:path];
+        }
+    }
+    return rcBundle;
 }
 
 - (UICollectionView *)popCollectionView {
@@ -276,7 +287,7 @@ UICollectionViewDataSource
             _popCollectionView.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
         }
         
-        [_popCollectionView registerNib:[UINib nibWithNibName:RXPopBoxCellID bundle:[NSBundle mainBundle]] forCellWithReuseIdentifier:RXPopBoxCellID];
+        [_popCollectionView registerNib:[UINib nibWithNibName:RXPopBoxCellID bundle:[self rcBundle]] forCellWithReuseIdentifier:RXPopBoxCellID];
     }
     return _popCollectionView;
 }

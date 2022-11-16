@@ -264,6 +264,7 @@ UICollectionViewDataSource
         NSString *path = [bundle pathForResource:@"RongCloud" ofType:@"bundle"];
         if (path.length > 0) {
             rcBundle = [NSBundle bundleWithPath:path];
+            break;
         }
     }
     return rcBundle;

@@ -19,6 +19,7 @@
 #import <RongLocation/RCLocationMessage.h>
 
 @class RCCustomerServiceInfo,RCPublicServiceMenuItem;
+@class RXPopMenuItem;
 /*!
  客服服务状态
  */
@@ -611,7 +612,7 @@ typedef enum : NSUInteger {
  @discussion SDK在此长按事件中，会展示此方法返回的菜单。
  您在重写此回调时，如果想保留SDK原有的功能，需要注意调用super。
  */
-- (NSArray<UIMenuItem *> *)getLongTouchMessageCellMenuList:(RCMessageModel *)model;
+- (NSArray<RXPopMenuItem *> *)getLongTouchMessageCellMenuList:(RCMessageModel *)model;
 
 /*!
  点击Cell中URL的回调

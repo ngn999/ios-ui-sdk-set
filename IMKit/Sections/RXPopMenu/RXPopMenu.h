@@ -119,11 +119,15 @@ typedef NS_ENUM(NSUInteger, RXPopMenuItemType) {
     RXPopMenuItemRead,
 };
 
+typedef void (^RxPopMenuItemAction)(void);
+
 @interface RXPopMenuItem : NSObject
 
 + (id)itemWithType:(RXPopMenuItemType)type;
 
 + (id)itemTitle:(NSString *)title image:(NSString *)image;
+
++ (id)itemTitle:(NSString *)title image:(NSString *)image action:(RxPopMenuItemAction) action;
 
 + (id)itemTitle:(NSString *)title;
 
@@ -136,5 +140,6 @@ typedef NS_ENUM(NSUInteger, RXPopMenuItemType) {
 
 @property (nonatomic, strong) UIColor * titleColor;
 @property (nonatomic, strong) UIFont * titleFont;
+@property (nonatomic, strong) RxPopMenuItemAction action;
 
 @end

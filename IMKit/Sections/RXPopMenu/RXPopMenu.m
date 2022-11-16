@@ -491,6 +491,11 @@ UICollectionViewDataSource
     if (self.itemActions) {
         self.itemActions(self.items[indexPath.row]);
         [self hideMenu];
+    } else {
+        RXPopMenuItem *item = self.items[indexPath.row];
+        if (item.action) {
+            item.action();
+        }
     }
 }
 
@@ -516,8 +521,14 @@ UICollectionViewDataSource
 - (void)collectionView:(UICollectionView *)collectionView didSelectItemAtIndexPath:(NSIndexPath *)indexPath {
     if (self.itemActions) {
         self.itemActions(self.items[indexPath.row]);
-        [self hideMenu];
     }
+    else {
+        RXPopMenuItem *item = self.items[indexPath.row];
+        if (item.action) {
+            item.action();
+        }
+    }
+    [self hideMenu];
 }
 
 - (void)touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
@@ -576,6 +587,14 @@ UICollectionViewDataSource
     item.itemType = type;
     item.title = title;
     item.image = image;
+    return item;
+}
+
++ (id)itemTitle:(NSString *)title image:(NSString *)image action:(RxPopMenuItemAction)action{
+    RXPopMenuItem * item = [[RXPopMenuItem alloc] init];
+    item.title = title;
+    item.image = image;
+    item.action = action;
     return item;
 }
 

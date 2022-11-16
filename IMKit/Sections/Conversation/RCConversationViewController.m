@@ -62,6 +62,8 @@
 #import "RCTextMessageTranslatingCell.h"
 #import "RCVoiceMessageTranslatingCell.h"
 
+#import "RXPopMenu.h"
+
 #define UNREAD_MESSAGE_MAX_COUNT 99
 #define COLLECTION_VIEW_REFRESH_CONTROL_HEIGHT 30
 
@@ -2140,67 +2142,75 @@ static NSString *const rcUnknownMessageCellIndentifier = @"rcUnknownMessageCellI
         // inputTextView 是第一响应者时，不需要再设置 self 为第一响应者，否则会导致键盘收起
         [self becomeFirstResponder];
     }
-    CGRect rect = [self.view convertRect:view.frame fromView:view.superview];
+    // CGRect rect = [self.view convertRect:view.frame fromView:view.superview];
 
-    UIMenuController *menu = [UIMenuController sharedMenuController];
-    [menu setMenuItems:[self getLongTouchMessageCellMenuList:model]];
-    if (@available(iOS 13.0, *)) {
-        [menu showMenuFromView:self.view rect:rect];
-    } else {
-        [menu setTargetRect:rect inView:self.view];
-        [menu setMenuVisible:YES animated:YES];
-    }
+//    UIMenuController *menu = [UIMenuController sharedMenuController];
+//    [menu setMenuItems:[self getLongTouchMessageCellMenuList:model]];
+//    if (@available(iOS 13.0, *)) {
+//        [menu showMenuFromView:self.view rect:rect];
+//    } else {
+//        [menu setTargetRect:rect inView:self.view];
+//        [menu setMenuVisible:YES animated:YES];
+//    }
+    RXPopMenu *menu = [RXPopMenu menuWithType:RXPopMenuBox];
+    [menu showBy:view withItems:[self getLongTouchMessageCellMenuList:model]];
 }
 
-- (NSArray<UIMenuItem *> *)getLongTouchMessageCellMenuList:(RCMessageModel *)model {
-    UIMenuItem *copyItem = [[UIMenuItem alloc] initWithTitle:RCLocalizedString(@"Copy")
-                                                      action:@selector(onCopyMessage:)];
-    UIMenuItem *deleteItem =
-        [[UIMenuItem alloc] initWithTitle:RCLocalizedString(@"Delete")
-                                   action:@selector(onDeleteMessage:)];
+- (NSArray<RXPopMenuItem *> *)getLongTouchMessageCellMenuList:(RCMessageModel *)model {
+    __weak typeof(self) __weakself = self;
+    RXPopMenuItem  *copyItem = [RXPopMenuItem itemTitle:@"Copy" image:@"add" action:^{
+        [__weakself onCopyMessage:nil];
+    }];
 
-    UIMenuItem *recallItem =
-        [[UIMenuItem alloc] initWithTitle:RCLocalizedString(@"Recall")
-                                   action:@selector(onRecallMessage:)];
-    UIMenuItem *multiSelectItem =
-        [[UIMenuItem alloc] initWithTitle:RCLocalizedString(@"MessageTapMore")
-                                   action:@selector(onMultiSelectMessageCell:)];
-
-    UIMenuItem *referItem =
-        [[UIMenuItem alloc] initWithTitle:RCLocalizedString(@"Reference")
-                                   action:@selector(onReferenceMessageCell:)];
-    NSMutableArray *items = @[].mutableCopy;
-    if (model.content.destructDuration > 0) {
-        [items addObject:deleteItem];
-        if ([self.util canRecallMessageOfModel:model]) {
-            [items addObject:recallItem];
-        }
-    } else {
-        if ([model.content isMemberOfClass:[RCTextMessage class]] ||
-            [model.content isMemberOfClass:[RCReferenceMessage class]]) {
-            [items addObject:copyItem];
-        }
-        [items addObject:deleteItem];
-        if ([self.util canRecallMessageOfModel:model]) {
-            [items addObject:recallItem];
-        }
-        if ([self.util canReferenceMessage:model]) {
-            [items addObject:referItem];
-        }        
-    }
-    
-    BOOL translateEnable = [self isTranslationEnable] && !model.isTranslated && [model.content isKindOfClass:[RCTextMessage class]] && !model.translating;
-    if (translateEnable) {
-        UIMenuItem *transItem =
-        [[UIMenuItem alloc] initWithTitle:RCLocalizedString(@"Translate")
-                                   action:@selector(onTranslateMessageCell:)];
-        [items addObject:transItem];
-    }
-    if (self.conversationType != ConversationType_GROUP) {
-        [items addObject:multiSelectItem];
-    }
-    
-    return items.copy;
+    return @[copyItem];
+//    UIMenuItem *copyItem = [[UIMenuItem alloc] initWithTitle:RCLocalizedString(@"Copy")
+//                                                      action:@selector(onCopyMessage:)];
+//    UIMenuItem *deleteItem =
+//        [[UIMenuItem alloc] initWithTitle:RCLocalizedString(@"Delete")
+//                                   action:@selector(onDeleteMessage:)];
+//
+//    UIMenuItem *recallItem =
+//        [[UIMenuItem alloc] initWithTitle:RCLocalizedString(@"Recall")
+//                                   action:@selector(onRecallMessage:)];
+//    UIMenuItem *multiSelectItem =
+//        [[UIMenuItem alloc] initWithTitle:RCLocalizedString(@"MessageTapMore")
+//                                   action:@selector(onMultiSelectMessageCell:)];
+//
+//    UIMenuItem *referItem =
+//        [[UIMenuItem alloc] initWithTitle:RCLocalizedString(@"Reference")
+//                                   action:@selector(onReferenceMessageCell:)];
+//    NSMutableArray *items = @[].mutableCopy;
+//    if (model.content.destructDuration > 0) {
+//        [items addObject:deleteItem];
+//        if ([self.util canRecallMessageOfModel:model]) {
+//            [items addObject:recallItem];
+//        }
+//    } else {
+//        if ([model.content isMemberOfClass:[RCTextMessage class]] ||
+//            [model.content isMemberOfClass:[RCReferenceMessage class]]) {
+//            [items addObject:copyItem];
+//        }
+//        [items addObject:deleteItem];
+//        if ([self.util canRecallMessageOfModel:model]) {
+//            [items addObject:recallItem];
+//        }
+//        if ([self.util canReferenceMessage:model]) {
+//            [items addObject:referItem];
+//        }
+//    }
+//
+//    BOOL translateEnable = [self isTranslationEnable] && !model.isTranslated && [model.content isKindOfClass:[RCTextMessage class]] && !model.translating;
+//    if (translateEnable) {
+//        UIMenuItem *transItem =
+//        [[UIMenuItem alloc] initWithTitle:RCLocalizedString(@"Translate")
+//                                   action:@selector(onTranslateMessageCell:)];
+//        [items addObject:transItem];
+//    }
+//    if (self.conversationType != ConversationType_GROUP) {
+//        [items addObject:multiSelectItem];
+//    }
+//
+//    return items.copy;
 }
 
 - (void)didTapUrlInMessageCell:(NSString *)url model:(RCMessageModel *)model {

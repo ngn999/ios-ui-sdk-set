@@ -16,6 +16,8 @@
 @property (nonatomic, strong) AVCaptureSession *captureSession;
 
 @property (nonatomic, strong) AVCaptureDeviceInput *activeVideoInput;
+@property (nonatomic, strong) AVCaptureDeviceInput *activeAudioInput;
+@property (nonatomic, strong) AVCaptureAudioDataOutput *activeAudioDeviceOutput;
 
 @property (nonatomic, strong) AVCaptureDevice *audioDevice;
 
@@ -119,6 +121,7 @@
     AVCaptureDeviceInput *audioDeviceInput = [[AVCaptureDeviceInput alloc] initWithDevice:self.audioDevice error:nil];
     if ([self.captureSession canAddInput:audioDeviceInput]) {
         [self.captureSession addInput:audioDeviceInput];
+        self.activeAudioInput = audioDeviceInput;
     }
 
     AVCaptureAudioDataOutput *audioDeviceOutput = [[AVCaptureAudioDataOutput alloc] init];
@@ -126,6 +129,7 @@
 
     if ([self.captureSession canAddOutput:audioDeviceOutput]) {
         [self.captureSession addOutput:audioDeviceOutput];
+        self.activeAudioDeviceOutput = audioDeviceOutput;
     }
     self.audioConnection = [audioDeviceOutput connectionWithMediaType:AVMediaTypeAudio];
 
@@ -342,6 +346,37 @@
     return YES;
 }
 
+- (void)resetAudioSession {
+    AVCaptureDevice *newAudioDevice = [AVCaptureDevice defaultDeviceWithMediaType:AVMediaTypeAudio];
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+        /*audio*/
+        [self.captureSession beginConfiguration];
+        [self.captureSession removeInput:self.activeAudioInput];
+        AVCaptureDeviceInput *audioDeviceInput = [[AVCaptureDeviceInput alloc] initWithDevice:newAudioDevice error:nil];
+        if ([self.captureSession canAddInput:audioDeviceInput]) {
+            [self.captureSession addInput:audioDeviceInput];
+            self.activeAudioInput = audioDeviceInput;
+            _audioDevice = newAudioDevice;
+        }else {
+            [self.captureSession addInput:self.activeAudioInput];
+        }
+        
+        AVCaptureAudioDataOutput *audioDeviceOutput = [[AVCaptureAudioDataOutput alloc] init];
+        [audioDeviceOutput setSampleBufferDelegate:self queue:self.sessionQueue];
+        [self.captureSession removeOutput:self.activeAudioDeviceOutput];
+        if ([self.captureSession canAddOutput:audioDeviceOutput]) {
+            [self.captureSession addOutput:audioDeviceOutput];
+            self.activeAudioDeviceOutput = audioDeviceOutput;
+        }else {
+            [self.captureSession addOutput:self.activeAudioDeviceOutput];
+        }
+        self.audioConnection = [self.activeAudioDeviceOutput connectionWithMediaType:AVMediaTypeAudio];
+
+        [self.captureSession commitConfiguration];
+    });
+
+}
+
 - (BOOL)switchCamera {
     if (![self canSwitchCameras]) {
         return NO;
@@ -450,15 +485,6 @@
 didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
        fromConnection:(AVCaptureConnection *)connection {
     [self.delegate didOutputSampleBuffer:sampleBuffer];
-}
-
-#pragma mark - RCSightRecorderDelegate
-- (void)didWriteMovieAtURL:(NSURL *)outputURL {
-    ALAssetsLibrary *library = [[ALAssetsLibrary alloc] init];
-    [library writeVideoAtPathToSavedPhotosAlbum:outputURL
-                                completionBlock:^(NSURL *assetURL, NSError *error){
-
-                                }];
 }
 
 #pragma mark - Notification Selector

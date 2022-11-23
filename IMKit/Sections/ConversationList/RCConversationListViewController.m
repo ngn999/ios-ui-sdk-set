@@ -176,6 +176,9 @@
 }
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
+    if (indexPath.row >= self.dataSource.dataList.count) {
+        return;
+    }
     RCConversationModel *model = self.dataSource.dataList[indexPath.row];
 
     if (model.conversationModelType == RC_CONVERSATION_MODEL_TYPE_PUBLIC_SERVICE) {
@@ -384,6 +387,12 @@
         }
         self.networkIndicatorView.hidden = NO;
         [self.networkIndicatorView setText:RCLocalizedString(@"KickedOfflineByOtherClient")];
+    } else if (status == ConnectionStatus_PROXY_UNAVAILABLE) {
+        if (self.networkIndicatorView.hidden) {
+            needReloadTableView = YES;
+        }
+        self.networkIndicatorView.hidden = NO;
+        [self.networkIndicatorView setText:RCLocalizedString(@"ConnectionstatusProxyUnavailable")];
     } else if (status != ConnectionStatus_Connecting) {
         if (!self.networkIndicatorView.hidden) {
             needReloadTableView = YES;

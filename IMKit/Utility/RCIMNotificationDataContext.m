@@ -7,6 +7,7 @@
 //
 
 #import "RCIMNotificationDataContext.h"
+#import "RCIMThreadLock.h"
 
 NSString *const RCIMNotificationDataContextGlobalNotificationLevel = @"RCIMNotificationDataContextGlobalNotificationLevel";
 
@@ -31,13 +32,12 @@ static void *_notificationWorkQueueTag = &_notificationWorkQueueTag;
 
 @interface RCIMNotificationDataContext()
 @property (nonatomic, strong) NSMutableDictionary *notificationInfo;
-@property (nonatomic, strong) dispatch_queue_t notificationRWQueue;
 @property (nonatomic, strong) dispatch_queue_t notificationWorkQueue;
 
 @property (nonatomic, strong) NSDateFormatter *formatter;
 @property (nonatomic, strong) NSDate *dateBegin;
 @property (nonatomic, strong) NSDate *dateEnd;
-
+@property (nonatomic, strong) RCIMThreadLock *threadLock;
 @end
 
 static RCIMNotificationDataContext *_instance = nil;
@@ -56,9 +56,9 @@ static dispatch_once_t onceToken;
     self = [super init];
     if (self) {
         self.notificationInfo = [NSMutableDictionary dictionary];
-        self.notificationRWQueue =  dispatch_queue_create("cn.rongcloud.notificationRWQueue", DISPATCH_QUEUE_CONCURRENT);
         self.notificationWorkQueue =  dispatch_queue_create("cn.rongcloud.notificationWorkQueue", DISPATCH_QUEUE_SERIAL);
-        dispatch_queue_set_specific(self.notificationRWQueue, _notificationWorkQueueTag, _notificationWorkQueueTag, NULL);
+        dispatch_queue_set_specific(self.notificationWorkQueue, _notificationWorkQueueTag, _notificationWorkQueueTag, NULL);
+        self.threadLock = [RCIMThreadLock new];
         [self registerObservers];
     }
     return self;
@@ -80,10 +80,10 @@ static dispatch_once_t onceToken;
                 dic[key] = @(conversation.notificationLevel);
             }
             RCIMNotificationDataContext *context = [self currentDataContext];
-            dispatch_barrier_async(context.notificationRWQueue, ^{
+            [context.threadLock performWriteLockBlock:^{
                 [context.notificationInfo addEntriesFromDictionary:dic];
                 RCDLog(@"更新后的缓存数据: %@", [context.notificationInfo description])
-            });
+            }];
         }
     }];
 }
@@ -130,12 +130,12 @@ static dispatch_once_t onceToken;
 
 - (void)clean {
     [self performOperationQueueBlock:^{
-        dispatch_barrier_async(self.notificationRWQueue, ^{
+        [self.threadLock performWriteLockBlock:^{
             [self.notificationInfo removeAllObjects];
             self.dateBegin = nil;
             self.dateEnd = nil;
             RCDLog(@"清理后的缓存数据: %@", [self.notificationInfo description])
-        });
+        }];
     }];
 }
 #pragma mark -- Private
@@ -145,17 +145,18 @@ static dispatch_once_t onceToken;
 /// @param errorBlock errorBlock
 + (void)queryGlobalNotificationLevel:(void (^)(RCPushNotificationQuietHoursLevel level))completion {
     RCDLog(@"开始全局查询-> ");
-
+    
     RCIMNotificationDataContext *context = [self currentDataContext];
     RCPushNotificationQuietHoursLevel level = RCPushNotificationQuietHoursLevelDefault;
     __block NSNumber *levelNumber = @(RCPushNotificationQuietHoursLevelDefault);
     __block NSDate *dateBegin = nil;
     __block NSDate *dateEnd = nil;
-    dispatch_sync(context.notificationRWQueue, ^{
+    [context.threadLock performReadLockBlock:^{
         dateBegin = context.dateBegin;
         dateEnd = context.dateEnd;
         levelNumber = context.notificationInfo[RCIMNotificationDataContextGlobalNotificationLevel];
-    });
+    }];
+    
     if (!dateBegin || !dateEnd) { // 全局已没有有效时间
         if (completion) {
             RCDLog(@"全局查询结束->时间无效, level: %ld", (long)level);
@@ -167,7 +168,7 @@ static dispatch_once_t onceToken;
     NSTimeInterval current = [date timeIntervalSince1970];
     NSTimeInterval timeBegin = [dateBegin timeIntervalSince1970];
     NSTimeInterval timeEnd = [dateEnd timeIntervalSince1970];
-
+    
     if (timeEnd < current) {// 时间已过期
         [self updateGlobalNotificationLevelWith:nil
                                         dateEnd:nil
@@ -191,16 +192,16 @@ static dispatch_once_t onceToken;
     if (levelNumber) {
         level = (RCPushNotificationQuietHoursLevel)[levelNumber integerValue];
         RCDLog(@"全局查询结束->有缓存,level: %ld", (long)level);
-
+        
         if (completion) {
             completion(level);
         }
     } else {
         RCDLog(@"全局查询结束->没有缓存, 开始查询数据库");
-
+        
         [self queryGlobalNotificationLevelInDB:^(NSString *startTime, int spanMins, RCPushNotificationQuietHoursLevel level) {
             RCDLog(@"全局查询结束->没有缓存, 查询数据库成功, level: %ld", (long)level);
-
+            
             [self updateGlobalNotificationLevelWith:startTime duration:spanMins level:level];
             if (completion) {
                 completion(level);
@@ -218,11 +219,11 @@ static dispatch_once_t onceToken;
 /// 移除全局等级
 + (void)removeGlobalNotification {
     RCIMNotificationDataContext *context = [self currentDataContext];
-    dispatch_barrier_async(context.notificationRWQueue, ^{
+    [context.threadLock performWriteLockBlock:^{
         context.notificationInfo[RCIMNotificationDataContextGlobalNotificationLevel] = nil;
         context.dateEnd = nil;
         context.dateEnd = nil;
-    });
+    }];
 }
 
 /// 获取非 Global 的level
@@ -242,7 +243,7 @@ static dispatch_once_t onceToken;
     if ([self isStringEmpty:targetId]) { // 如果targetID 为空, 就从category开始查
         strategy = RCPushNotificationLevelStrategyCategory;
     }
-
+    
     RCDLog(@"开始通用查询-> type:%ld, targetId:%@ ,channel: %@ , strategy: %ld", (long)type, targetId, channelId, (long)strategy);
     [self queryNotificationLevelWith:type
                             targetId:targetId
@@ -282,20 +283,20 @@ static dispatch_once_t onceToken;
         channelId = @"";
         targetId = @"";
     }
-
+    
     RCPushNotificationLevelStrategy nextStrategy = strategy-1;//下一个策略
     RCIMNotificationDataContext *context = [self currentDataContext];
     __block RCPushNotificationLevel level = RCPushNotificationLevelDefault;
     __block NSNumber *levelNumber = nil;
     NSString *key = [self keyStringWith:type targetId:targetId channelId:channelId];
-    dispatch_sync(context.notificationRWQueue, ^{
+    [context.threadLock performReadLockBlock:^{
         levelNumber = [context.notificationInfo objectForKey:key];
         RCDLog(@"通用查询 notificationInfo: %@", [context.notificationInfo description]);
-    });
+    }];
     
     if (!levelNumber) { // 需要重新查数据库
         RCDLog(@"cache无数据, 开始数据库查询-> type:%ld, targetId:%@ ,channel: %@ , stratege: %ld, ", (long)type, targetId, channelId, (long)strategy);
-
+        
         [self levelInfoInDBWith:type
                        targetId:targetId
                       channelId:channelId
@@ -303,7 +304,7 @@ static dispatch_once_t onceToken;
                         success:^(RCPushNotificationLevel level) {// 如果从数据库查询成功
             [context updateNotificationLevelWith:@(level) byKey:key]; // 保存数据level
             RCDLog(@"cache无数据, 数据库查询结束-> type:%ld, targetId:%@ ,channel: %@ , stratege: %ld, level:%ld ", (long)type, targetId, channelId, (long)strategy, (long)level);
-
+            
             // 进入下一级查询
             [self queryNotificationLevelWith:type
                                     targetId:targetId
@@ -313,7 +314,7 @@ static dispatch_once_t onceToken;
                                   completion:completion];
         } error:^(RCErrorCode status) {
             RCDLog(@"cache无数据, 数据库查询失败-> type:%ld, targetId:%@ ,channel: %@ , nextStrategy: %ld, level:%ld ", (long)type, targetId, channelId, (long)nextStrategy, (long)level);
-
+            
             // 如果数据库查询失败, 直接进入下一级查询
             [self queryNotificationLevelWith:type
                                     targetId:targetId
@@ -326,7 +327,7 @@ static dispatch_once_t onceToken;
     } else {
         level = (RCPushNotificationLevel)[levelNumber integerValue];
         RCDLog(@"找到cache数据, 进入下级-> type:%ld, targetId:%@ ,channel: %@ , nextStrategy: %ld, level:%ld ", (long)type, targetId, channelId, (long)nextStrategy, (long)level);
-
+        
         // 已查询到level, 进入下一级
         [self queryNotificationLevelWith:type
                                 targetId:targetId
@@ -371,11 +372,11 @@ static dispatch_once_t onceToken;
                                   dateEnd:(NSDate *)dateEnd
                                     level:(RCPushNotificationQuietHoursLevel)level {
     RCIMNotificationDataContext *context = [self currentDataContext];
-    dispatch_barrier_async(context.notificationRWQueue, ^{
+    [context.threadLock performWriteLockBlock:^{
         context.notificationInfo[RCIMNotificationDataContextGlobalNotificationLevel] = @(level);
         context.dateBegin = dateBegin;
         context.dateEnd = dateEnd;
-    });
+    }];
 }
 
 
@@ -514,10 +515,11 @@ static dispatch_once_t onceToken;
 /// @param key key
 - (void)updateNotificationLevelWith:(NSNumber *__nullable)level byKey:(NSString *)key {
     if (key) {
-        dispatch_barrier_async(self.notificationRWQueue, ^{
+        [self.threadLock performWriteLockBlock:^{
             self.notificationInfo[key] = level;
             RCDLog(@"更新 notificationInfo: %@", [self.notificationInfo description]);
-        });
+        }];
+        
     }
 }
 

@@ -16,8 +16,8 @@
 #import "RCThemeDefine.h"
 #import <UIKit/UIKit.h>
 #import "RCReferencingView.h"
-#import <RongLocation/RCLocationMessage.h>
 
+@class RCLocationMessage;
 @class RCCustomerServiceInfo,RCPublicServiceMenuItem;
 /*!
  客服服务状态
@@ -205,7 +205,10 @@ typedef enum : NSUInteger {
  会话页面下方的输入工具栏
  */
 @property (nonatomic, strong) RCChatSessionInputBarControl *chatSessionInputBarControl;
-
+/*!
+ 禁用系统表情, 建议在RCConversationViewController 创建后立刻赋值
+ */
+@property (nonatomic, assign) BOOL  disableSystemEmoji;
 /*!
  输入框的默认输入模式
 
@@ -279,7 +282,7 @@ typedef enum : NSUInteger {
  设置进入聊天室需要获取的历史消息数量（仅在当前会话为聊天室时生效）
 
  @discussion 此属性需要在viewDidLoad之前进行设置。
- -1表示不获取任何历史消息，0表示不特殊设置而使用SDK默认的设置（默认为获取10条），0<messageCount<=50为具体获取的消息数量,最大值为30。注：如果是7.x系统获取历史消息数量不要大于30
+ -1表示不获取任何历史消息，0表示不特殊设置而使用SDK默认的设置（默认为获取10条）。
  */
 @property (nonatomic, assign) int defaultHistoryMessageCountOfChatRoom;
 
@@ -292,6 +295,7 @@ typedef enum : NSUInteger {
 /*!
  设置进入会话页面后下拉刷新从本地数据库取的消息的条数，默认是 10。
  @discussion 此属性需要在viewDidLoad之前进行设置。
+ 从 5.2.4 及之后版本， SDK 加载消息的个数使用 defaultRemoteHistoryMessageCount， 请勿再使用该字段。
  */
 @property (nonatomic, assign) int defaultLocalHistoryMessageCount;
 
@@ -415,7 +419,7 @@ typedef enum : NSUInteger {
  如果您需要重写此接口，请注意调用super。
  因 UI 逻辑修改为将原消息移动到会话页面最下方，不删除原消息直接重新发送原消息，但是此方法会重新生成消息发送，故废弃。
  */
-- (void)resendMessage:(RCMessageContent *)messageContent __deprecated_msg("已废弃，请使用 resendMessageWithModel");
+- (void)resendMessage:(RCMessageContent *)messageContent __deprecated_msg("Use resendMessageWithModel instead");
 
 /*!
  重新发送消息
@@ -440,13 +444,24 @@ typedef enum : NSUInteger {
 - (void)appendAndDisplayMessage:(RCMessage *)message;
 
 #pragma mark 删除消息
+
+/*!
+ 默认值为 NO 长按只删除本地消息，设置为 YES 时长按删除消息，会把远端的消息也进行删除
+*/
+@property (nonatomic, assign) BOOL needDeleteRemoteMessage;
+
 /*!
  删除消息并更新UI
 
  @param model 消息Cell的数据模型
- @discussion 会话页面只删除本地消息，如果需要删除远端历史消息，需要
+ @discussion
+ v5.2.3 之前 会话页面只删除本地消息，如果需要删除远端历史消息，需要
     1.重写该方法，并调用 super 删除本地消息
     2.调用删除远端消息接口，删除远端消息
+ 
+ v5.2.3及以后，会话页面会根据 needDeleteRemoteMessage 设置进行处理
+    如未设置默认值为NO， 只删除本地消息
+    设置为 YES 时， 会同时删除远端消息
  */
 - (void)deleteMessage:(RCMessageModel *)model;
 
@@ -479,7 +494,7 @@ typedef enum : NSUInteger {
  @param status          发送状态，0表示成功，非0表示失败
  @param messageContent   消息内容
  */
-- (void)didSendMessage:(NSInteger)status content:(RCMessageContent *)messageContent __deprecated_msg("已废弃，请使用 - (void)didSendMessageModel:(NSInteger)status model:(RCMessageModel *)messageModel");
+- (void)didSendMessage:(NSInteger)status content:(RCMessageContent *)messageContent __deprecated_msg("Use - (void)didSendMessageModel:(NSInteger)status model:(RCMessageModel *)messageModel instead");
 
 /*!
  发送消息完成的回调
@@ -536,6 +551,14 @@ typedef enum : NSUInteger {
 
 #pragma mark - 自定义消息
 /*!
+ 用户注册自定义消息的入口
+
+ @discussion 如果有自定义消息，请在该方法内执行
+ - (void)registerClass:(Class)cellClass forMessageClass:(Class)messageClass
+ 进行消息注册
+ */
+- (void)registerCustomCellsAndMessages;
+/*!
  注册自定义消息的Cell
 
  @param cellClass     自定义消息cell的类
@@ -544,7 +567,8 @@ typedef enum : NSUInteger {
  @discussion
  你需要在cell中重写RCMessageBaseCell基类的sizeForMessageModel:withCollectionViewWidth:referenceExtraHeight:来计算cell的高度。
  
- @discussion 如果有自定义消息，在会话页面子类 viewDidLoad 方法中需优先注册自定义消息的 cell, 再做其他操作
+ @discussion 如果有自定义消息，在会话页面子类 registerCustomCellsAndMessages 方法中需优先注册自定义消息的 cell, 再做其他操作;  请不要在其他方法中进行注册, 可能会有渲染时序问题
+
  */
 - (void)registerClass:(Class)cellClass forMessageClass:(Class)messageClass;
 

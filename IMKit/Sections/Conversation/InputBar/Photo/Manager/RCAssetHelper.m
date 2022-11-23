@@ -25,18 +25,6 @@ dispatch_queue_t __rc__photo__working_queue = NULL;
     if (self = [super init]) {
         _assetLibrary = [[ALAssetsLibrary alloc] init];
         __rc__photo__working_queue = dispatch_queue_create("com.rongcloud.photoWorkingQueue", NULL);
-        if (RC_IOS_SYSTEM_VERSION_GREATER_THAN_OR_EQUAL_TO(@"8.0")) {
-            PHAuthorizationStatus status = [PHPhotoLibrary authorizationStatus];
-            BOOL authed = NO;
-            if (@available(iOS 14, *)) {
-                authed = (status == PHAuthorizationStatusAuthorized || status == PHAuthorizationStatusLimited);
-            } else {
-                authed = (status == PHAuthorizationStatusAuthorized);
-            }
-            if (authed) {
-                [[PHPhotoLibrary sharedPhotoLibrary] registerChangeObserver:self];
-            }
-        }
     }
     return self;
 }
@@ -46,14 +34,28 @@ dispatch_queue_t __rc__photo__working_queue = NULL;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
         assetHelper = [[RCAssetHelper alloc] init];
-        assetHelper.isSynchronizing = YES;
-        [assetHelper getAlbumsFromSystem:^(NSArray *albums) {
-            assetHelper.isSynchronizing = NO;
-            assetHelper.assetsGroups = albums;
-        }
-                               groupType:ALAssetsGroupAll];
     });
+    [assetHelper addRegisterIfNeed];
     return assetHelper;
+}
+
+//bugID=50382
+- (void)addRegisterIfNeed {
+    if (RC_IOS_SYSTEM_VERSION_GREATER_THAN_OR_EQUAL_TO(@"8.0")) {
+        PHAuthorizationStatus status = [PHPhotoLibrary authorizationStatus];
+        BOOL authed = NO;
+        if (@available(iOS 14, *)) {
+            authed = (status == PHAuthorizationStatusAuthorized || status == PHAuthorizationStatusLimited);
+        } else {
+            authed = (status == PHAuthorizationStatusAuthorized);
+        }
+        if (authed) {
+            static dispatch_once_t onceToken2;
+            dispatch_once(&onceToken2, ^{
+                [[PHPhotoLibrary sharedPhotoLibrary] registerChangeObserver:self];
+            });
+        }
+    }
 }
 
 - (BOOL)hasAuthorizationStatusAuthorized {
@@ -68,9 +70,18 @@ dispatch_queue_t __rc__photo__working_queue = NULL;
                       resultCompletion:(void (^)(NSArray *assetGroup))result {
     if (_assetsGroups && _assetsGroups.count > 0 && RC_IOS_SYSTEM_VERSION_GREATER_THAN_OR_EQUAL_TO(@"8.0")) {
         NSArray *photos = [NSArray arrayWithArray:_assetsGroups];
-        result(photos);
+        if (result) {
+            result(photos);
+        }
     } else {
-        [self getAlbumsFromSystem:result groupType:groupType];
+        self.isSynchronizing = YES;
+        [self getAlbumsFromSystem:^(NSArray *albums) {
+            self.isSynchronizing = NO;
+            self.assetsGroups = albums;
+            if (result) {
+                result(albums);
+            }
+        } groupType:groupType];
     }
 }
 
@@ -428,6 +439,46 @@ getOriginImageDataWithAsset:(RCAssetModel *)assetModel
     }
 }
 
++ (void)savePhotosAlbumWithImage:(UIImage *)image authorizationStatusBlock:(nullable dispatch_block_t)authorizationStatusBlock resultBlock:(nullable void (^)(BOOL success))resultBlock {
+    PHAuthorizationStatus status = [PHPhotoLibrary authorizationStatus];
+    if (PHAuthorizationStatusRestricted == status || PHAuthorizationStatusDenied == status) {
+        if (authorizationStatusBlock) {
+            authorizationStatusBlock();
+        }
+        return;
+    }
+    
+    [[PHPhotoLibrary sharedPhotoLibrary] performChanges:^{
+        [PHAssetChangeRequest creationRequestForAssetFromImage:image];
+    } completionHandler:^(BOOL success, NSError * _Nullable error) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (resultBlock) {
+                resultBlock(nil == error);
+            }
+        });
+    }];
+}
+
++ (void)savePhotosAlbumWithVideoPath:(NSString *)videoPath authorizationStatusBlock:(nullable dispatch_block_t)authorizationStatusBlock resultBlock:(nullable void (^)(BOOL success))resultBlock {
+    PHAuthorizationStatus status = [PHPhotoLibrary authorizationStatus];
+    if (PHAuthorizationStatusRestricted == status || PHAuthorizationStatusDenied == status) {
+        if (authorizationStatusBlock) {
+            authorizationStatusBlock();
+        }
+        return;
+    }
+
+    [[PHPhotoLibrary sharedPhotoLibrary] performChanges:^{
+        [PHAssetChangeRequest creationRequestForAssetFromVideoAtFileURL:[NSURL fileURLWithPath:videoPath]];
+    } completionHandler:^(BOOL success, NSError * _Nullable error) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (resultBlock) {
+                resultBlock(nil == error);
+            }
+        });
+    }];
+
+}
 
 - (void)dealloc {
     if (RC_IOS_SYSTEM_VERSION_GREATER_THAN_OR_EQUAL_TO(@"8.0")) {

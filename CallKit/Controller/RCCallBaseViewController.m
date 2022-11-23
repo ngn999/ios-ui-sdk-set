@@ -67,10 +67,7 @@ NSNotificationName const RCCallNewSessionCreationNotification = @"RCCallNewSessi
     return self;
 }
 
-- (instancetype)initWithOutgoingCall:(RCConversationType)conversationType
-                            targetId:(NSString *)targetId
-                           mediaType:(RCCallMediaType)mediaType
-                          userIdList:(NSArray *)userIdList {
+- (instancetype)initWithOutgoingCall:(RCConversationType)conversationType isCrossCallType:(BOOL)isCross targetId:(NSString *)targetId mediaType:(RCCallMediaType)mediaType userIdList:(NSArray *)userIdList {
     self = [super init];
     if (self) {
         [self willChangeValueForKey:@"callSession"];
@@ -114,12 +111,22 @@ NSNotificationName const RCCallNewSessionCreationNotification = @"RCCallNewSessi
         [[RCCallClient sharedRCCallClient] setInvitePushConfig:invitePushConfig];
         [[RCCallClient sharedRCCallClient] setHangupPushConfig:hangupPushConfig];
 
-        _callSession = [[RCCallClient sharedRCCallClient] startCall:conversationType
-                                                           targetId:targetId
-                                                                 to:userIdList
-                                                          mediaType:mediaType
-                                                    sessionDelegate:self
-                                                              extra:nil];
+        if (isCross) {
+            _callSession = [[RCCallClient sharedRCCallClient] startCrossCall:conversationType
+                                                               targetId:targetId
+                                                                     to:userIdList
+                                                              mediaType:mediaType
+                                                        sessionDelegate:self
+                                                                  extra:nil];
+        } else {
+            _callSession = [[RCCallClient sharedRCCallClient] startCall:conversationType
+                                                               targetId:targetId
+                                                                     to:userIdList
+                                                              mediaType:mediaType
+                                                        sessionDelegate:self
+                                                                  extra:nil];
+        }
+        
         [[NSNotificationCenter defaultCenter] postNotificationName:RCCallNewSessionCreationNotification
                                                             object:_callSession];
         [self didChangeValueForKey:@"callSession"];
@@ -143,6 +150,14 @@ NSNotificationName const RCCallNewSessionCreationNotification = @"RCCallNewSessi
         hangupButtonClick = NO;
     }
     return self;
+}
+
+- (instancetype)initWithOutgoingCrossCall:(RCConversationType)conversationType targetId:(NSString *)targetId mediaType:(RCCallMediaType)mediaType userIdList:(NSArray *)userIdList {
+    return [self initWithOutgoingCall:conversationType isCrossCallType:YES targetId:targetId mediaType:mediaType userIdList:userIdList];
+}
+
+- (instancetype)initWithOutgoingCall:(RCConversationType)conversationType targetId:(NSString *)targetId mediaType:(RCCallMediaType)mediaType userIdList:(NSArray *)userIdList {
+    return [self initWithOutgoingCall:conversationType isCrossCallType:NO targetId:targetId mediaType:mediaType userIdList:userIdList];
 }
 
 - (instancetype)initWithActiveCall:(RCCallSession *)callSession {
@@ -759,9 +774,9 @@ NSNotificationName const RCCallNewSessionCreationNotification = @"RCCallNewSessi
 }
 
 - (void)cameraCloseButtonClicked {
-    [self didTapCameraCloseButton];
 
     if (!self.callSession.isMultiCall) {
+        [self didTapCameraCloseButton];
         [self.callSession setVideoView:nil userId:[RCIMClient sharedRCIMClient].currentUserInfo.userId];
         [self.callSession setVideoView:nil userId:self.callSession.targetId];
 
@@ -777,6 +792,7 @@ NSNotificationName const RCCallNewSessionCreationNotification = @"RCCallNewSessi
     } else {
         [self.callSession setCameraEnabled:!self.callSession.cameraEnabled];
         [self.cameraCloseButton setSelected:!self.callSession.cameraEnabled];
+        [self didTapCameraCloseButton];
     }
 }
 

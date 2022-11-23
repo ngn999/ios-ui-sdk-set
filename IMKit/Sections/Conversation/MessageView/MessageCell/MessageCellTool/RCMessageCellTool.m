@@ -9,6 +9,7 @@
 #import "RCMessageCellTool.h"
 #import "RCKitCommonDefine.h"
 #import "RCKitUtility.h"
+
 @implementation RCMessageCellTool
 + (UIImage *)getDefaultMessageCellBackgroundImage:(RCMessageModel *)model{
     UIImage *bubbleImage;
@@ -35,7 +36,7 @@
 }
 
 + (BOOL)isWhiteBubbleImageWithSendMesageCell:(NSString *)objectName{
-    NSArray *list = @[@"RC:FileMsg",@"RC:CardMsg",[RCLocationMessage getObjectName]];
+    NSArray *list = @[@"RC:FileMsg",@"RC:CardMsg",@"RC:LBSMsg"];
     if ([list containsObject:objectName]) {
         return YES;
     }

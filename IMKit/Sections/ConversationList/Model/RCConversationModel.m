@@ -51,6 +51,8 @@
         if (RC_CONVERSATION_MODEL_TYPE_PUBLIC_SERVICE == conversationModelType) {
             // self.conversationTitle = conversation.conversationTitle;
         }
+        self.notificationLevel = conversation.notificationLevel;
+        self.firstUnreadMsgSendTime = conversation.firstUnreadMsgSendTime;
         if (conversation && conversation.draft.length > 0) {
             __autoreleasing NSError *error = nil;
             NSData *draftData = [conversation.draft dataUsingEncoding:NSUTF8StringEncoding];

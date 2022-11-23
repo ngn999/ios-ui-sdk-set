@@ -465,7 +465,6 @@
                        self.view.frame.size.width - RCCallHorizontalMargin * 2, RCCallMiniLabelHeight);
         self.userCollectionTitleLabel.hidden = NO;
         self.userCollectionTitleLabel.text = RCCallKitLocalizedString(@"VoIPAudioCall");
-        ;
         _userCollectionTitleLabel.font = [UIFont fontWithName:@"PingFangSC-Regular" size:18];
     }
 
@@ -512,10 +511,12 @@
 - (void)callDidConnect {
     [self.userCollectionView removeFromSuperview];
     _userCollectionView = nil;
-    if (![self.callSession.caller isEqualToString:currentUserId]) {
-        [self.subUserModelList removeObject:[self getModelInSubUserModelList:currentUserId]];
-        [self.subUserModelList addObject:self.mainModel];
-        self.mainModel = nil;
+    [self.subUserModelList removeAllObjects];
+    for (RCCallUserProfile *userProfile in self.callSession.userProfileList) {
+       if (![userProfile.userId isEqualToString:currentUserId]) {
+           RCCallUserCallInfoModel *userModel = [self generateUserModel:userProfile.userId];
+           [self.subUserModelList addObject:userModel];
+       }
     }
     [self userCollectionView];
     [self updateAllSubUserLayout];

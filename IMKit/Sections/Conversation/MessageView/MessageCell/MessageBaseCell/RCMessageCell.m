@@ -60,7 +60,9 @@
 
 NSString *const KNotificationMessageBaseCellUpdateCanReceiptStatus =
     @"KNotificationMessageBaseCellUpdateCanReceiptStatus";
-@interface RCMessageCell()
+@interface RCMessageCell() {
+    BOOL _showPortrait;
+}
 @property (nonatomic, assign) BOOL showBubbleBackgroundView;
 @end
 @implementation RCMessageCell
@@ -84,6 +86,7 @@ NSString *const KNotificationMessageBaseCellUpdateCanReceiptStatus =
 }
 
 - (void)rcinit{
+    _showPortrait = YES;
     [self setupMessageCellView];
     [self registerMessageCellNotification];
 }
@@ -92,6 +95,17 @@ NSString *const KNotificationMessageBaseCellUpdateCanReceiptStatus =
     [[NSNotificationCenter defaultCenter] removeObserver:self];
 }
 
+- (void)setShowPortrait:(BOOL)showPortrait {
+    if (showPortrait != _showPortrait) {
+        _showPortrait = showPortrait;
+        [self relayoutViewBy:_showPortrait];
+    }
+    self.portraitImageView.hidden = !_showPortrait;
+}
+
+- (BOOL)showPortrait {
+    return _showPortrait;
+}
 #pragma mark - Super Methods
 
 - (void)setDataModel:(RCMessageModel *)model {
@@ -409,27 +423,45 @@ NSString *const KNotificationMessageBaseCellUpdateCanReceiptStatus =
 
         if (self.model){
             CGRect rect = CGRectMake(0, 0, size.width, size.height);
+            CGFloat protraitWidth = RCKitConfigCenter.ui.globalMessagePortraitSize.width;
+
             if ([RCKitUtility isRTL]) {
                 if(self.model.messageDirection == MessageDirection_RECEIVE) {
-                    (void)(rect.origin.x = self.baseContentView.bounds.size.width - (size.width + HeadAndContentSpacing + RCKitConfigCenter.ui.globalMessagePortraitSize.width + PortraitViewEdgeSpace)),
+                    if (self.showPortrait) {
+                        rect.origin.x = self.baseContentView.bounds.size.width - (size.width + HeadAndContentSpacing + protraitWidth + PortraitViewEdgeSpace);
+                    } else {
+                        rect.origin.x = self.baseContentView.bounds.size.width - (size.width + PortraitViewEdgeSpace);
+                    }
                     rect.origin.y = PortraitImageViewTop;
                     if (self.model.isDisplayNickname) {
                         rect.origin.y = PortraitImageViewTop + NameHeight + NameAndContentSpace;
                     }
                 } else {
-                    rect.origin.x = PortraitViewEdgeSpace + RCKitConfigCenter.ui.globalMessagePortraitSize.width + HeadAndContentSpacing;
+                    if (self.showPortrait) {
+                        rect.origin.x = PortraitViewEdgeSpace + protraitWidth + HeadAndContentSpacing;
+                    } else {
+                        rect.origin.x = PortraitViewEdgeSpace;
+                    }
                     rect.origin.y = PortraitImageViewTop;
                 }
             } else {
                 if(self.model.messageDirection == MessageDirection_RECEIVE) {
-                    rect.origin.x = PortraitViewEdgeSpace + RCKitConfigCenter.ui.globalMessagePortraitSize.width + HeadAndContentSpacing;
+                    if (self.showPortrait) {
+                        rect.origin.x = PortraitViewEdgeSpace + protraitWidth + HeadAndContentSpacing;
+                    } else {
+                        rect.origin.x = PortraitViewEdgeSpace;
+                    }
                     CGFloat messageContentViewY = PortraitImageViewTop;
                     if (self.model.isDisplayNickname) {
                         messageContentViewY = PortraitImageViewTop + NameHeight + NameAndContentSpace;
                     }
                     rect.origin.y = messageContentViewY;
                 } else {
-                    rect.origin.x = self.baseContentView.bounds.size.width - (size.width + HeadAndContentSpacing + RCKitConfigCenter.ui.globalMessagePortraitSize.width + PortraitViewEdgeSpace);
+                    if (self.showPortrait) {
+                        rect.origin.x = weakSelf.baseContentView.bounds.size.width - (size.width + HeadAndContentSpacing + protraitWidth + PortraitViewEdgeSpace);
+                    } else {
+                        rect.origin.x = weakSelf.baseContentView.bounds.size.width - (size.width + PortraitViewEdgeSpace);
+                    }
                     if (size.height < self.portraitImageView.frame.size.height) {
                         rect.origin.y = (self.portraitImageView.frame.size.height-size.height)/2;
                     } else {
@@ -443,6 +475,10 @@ NSString *const KNotificationMessageBaseCellUpdateCanReceiptStatus =
     }];
 }
 
+- (void)messageContentViewFrameDidChanged {
+    
+}
+
 - (void)setPortraitStyle:(RCUserAvatarStyle)portraitStyle {
     _portraitStyle = portraitStyle;
     if (_portraitStyle == RC_USER_AVATAR_RECTANGLE) {
@@ -454,18 +490,82 @@ NSString *const KNotificationMessageBaseCellUpdateCanReceiptStatus =
     self.portraitImageView.layer.masksToBounds = YES;
 }
 
+- (void)relayoutViewBy:(BOOL)show {
+    CGFloat protraitWidth = RCKitConfigCenter.ui.globalMessagePortraitSize.width;
+    CGFloat protraitHeight = RCKitConfigCenter.ui.globalMessagePortraitSize.height;
+    
+    CGRect nicknameFrame = self.nicknameLabel.frame;
+    CGRect contentFrame = self.messageContentView.frame;
+    CGSize size = contentFrame.size;
+    if ([RCKitUtility isRTL]) {
+        // receiver
+        if (MessageDirection_RECEIVE == self.model.messageDirection) {
+          
+            if (self.showPortrait) {
+                contentFrame.origin.x = self.baseContentView.bounds.size.width - (size.width + HeadAndContentSpacing + protraitWidth + PortraitViewEdgeSpace);
+            } else {
+                contentFrame.origin.x = self.baseContentView.bounds.size.width - (size.width + PortraitViewEdgeSpace);
+            }
+        } else { // owner
+            CGFloat nameOffset_X = 0;
+            if (self.showPortrait) {
+                contentFrame.origin.x = PortraitViewEdgeSpace + protraitWidth + HeadAndContentSpacing;
+                nameOffset_X = self.portraitImageView.frame.origin.x + self.portraitImageView.bounds.size.width + HeadAndContentSpacing;
+            } else {
+                contentFrame.origin.x = PortraitViewEdgeSpace;
+                nameOffset_X = self.portraitImageView.frame.origin.x;
+            }
+            
+            nicknameFrame.origin.x = nameOffset_X;
+        }
+
+    } else {
+        // receiver
+           if (MessageDirection_RECEIVE == self.model.messageDirection) {
+               CGFloat nameOffset_X = 0;
+               if (self.showPortrait) {
+                   contentFrame.origin.x = PortraitViewEdgeSpace + protraitWidth + HeadAndContentSpacing;
+                   nameOffset_X = self.portraitImageView.frame.origin.x + self.portraitImageView.bounds.size.width + HeadAndContentSpacing;
+               } else {
+                   contentFrame.origin.x = PortraitViewEdgeSpace;
+                   nameOffset_X = self.portraitImageView.frame.origin.x;
+               }
+               nicknameFrame.origin = CGPointMake(nameOffset_X, PortraitImageViewTop);
+               self.nicknameLabel.frame = nicknameFrame;
+           } else { // owner
+               if (self.showPortrait) {
+                   contentFrame.origin.x = self.baseContentView.bounds.size.width - (size.width + HeadAndContentSpacing + protraitWidth + PortraitViewEdgeSpace);
+               } else {
+                   contentFrame.origin.x = self.baseContentView.bounds.size.width - (size.width + PortraitViewEdgeSpace);
+               }
+           }
+    }
+    self.nicknameLabel.frame = nicknameFrame;
+    self.messageContentView.frame = contentFrame;
+    [self messageContentViewFrameDidChanged];
+
+}
+
 - (void)setCellAutoLayout {
+    CGFloat protraitWidth = RCKitConfigCenter.ui.globalMessagePortraitSize.width;
+    CGFloat protraitHeight = RCKitConfigCenter.ui.globalMessagePortraitSize.height;
+
     if ([RCKitUtility isRTL]) {
         // receiver
         if (MessageDirection_RECEIVE == self.model.messageDirection) {
             self.nicknameLabel.hidden = YES;
-            CGFloat portraitImageX = self.baseContentView.bounds.size.width - (RCKitConfigCenter.ui.globalMessagePortraitSize.width + PortraitViewEdgeSpace);
-            self.portraitImageView.frame = CGRectMake(portraitImageX, PortraitImageViewTop, RCKitConfigCenter.ui.globalMessagePortraitSize.width, RCKitConfigCenter.ui.globalMessagePortraitSize.height);
+            CGFloat portraitImageX = self.baseContentView.bounds.size.width - (protraitWidth + PortraitViewEdgeSpace);
+            self.portraitImageView.frame = CGRectMake(portraitImageX, PortraitImageViewTop, protraitWidth, protraitHeight);
         } else { // owner
             self.nicknameLabel.hidden = !self.model.isDisplayNickname;
             CGFloat portraitImageX = PortraitViewEdgeSpace;
-            self.portraitImageView.frame = CGRectMake(portraitImageX, PortraitImageViewTop, RCKitConfigCenter.ui.globalMessagePortraitSize.width, RCKitConfigCenter.ui.globalMessagePortraitSize.height);
-            self.nicknameLabel.frame = CGRectMake(portraitImageX + self.portraitImageView.bounds.size.width + HeadAndContentSpacing, PortraitImageViewTop, DefaultMessageContentViewWidth, NameHeight);
+            self.portraitImageView.frame = CGRectMake(portraitImageX, PortraitImageViewTop, protraitWidth, protraitHeight);
+            if (self.showPortrait) {
+                self.nicknameLabel.frame = CGRectMake(portraitImageX + self.portraitImageView.bounds.size.width + HeadAndContentSpacing, PortraitImageViewTop, DefaultMessageContentViewWidth, NameHeight);
+            } else {
+                self.nicknameLabel.frame = CGRectMake(portraitImageX, PortraitImageViewTop, DefaultMessageContentViewWidth, NameHeight);
+            }
+          
         }
         self.messageContentView.contentSize = CGSizeMake(DefaultMessageContentViewWidth,self.baseContentView.bounds.size.height - ContentViewBottom);
     } else {
@@ -474,19 +574,22 @@ NSString *const KNotificationMessageBaseCellUpdateCanReceiptStatus =
                self.nicknameLabel.hidden = !self.model.isDisplayNickname;
                CGFloat portraitImageX = PortraitViewEdgeSpace;
                self.portraitImageView.frame =
-               CGRectMake(portraitImageX, PortraitImageViewTop, RCKitConfigCenter.ui.globalMessagePortraitSize.width,
-                          RCKitConfigCenter.ui.globalMessagePortraitSize.height);
-               self.nicknameLabel.frame =
-               CGRectMake(portraitImageX + self.portraitImageView.bounds.size.width + HeadAndContentSpacing, PortraitImageViewTop, DefaultMessageContentViewWidth, NameHeight);
+               CGRectMake(portraitImageX, PortraitImageViewTop, protraitWidth,
+                          protraitHeight);
+            if (self.showPortrait) {
+                   self.nicknameLabel.frame =
+                   CGRectMake(portraitImageX + self.portraitImageView.bounds.size.width + HeadAndContentSpacing, PortraitImageViewTop, DefaultMessageContentViewWidth, NameHeight);
+               } else {
+                   self.nicknameLabel.frame =
+                   CGRectMake(portraitImageX , PortraitImageViewTop, DefaultMessageContentViewWidth, NameHeight);               }
                self.messageContentView.backgroundColor = UIColor.clearColor;
            } else { // owner
                self.nicknameLabel.hidden = YES;
                CGFloat portraitImageX =
-               self.baseContentView.bounds.size.width - (RCKitConfigCenter.ui.globalMessagePortraitSize.width + PortraitViewEdgeSpace);
+               self.baseContentView.bounds.size.width - (protraitWidth + PortraitViewEdgeSpace);
                self.portraitImageView.frame =
-               CGRectMake(portraitImageX, PortraitImageViewTop, RCKitConfigCenter.ui.globalMessagePortraitSize.width,
-                          RCKitConfigCenter.ui.globalMessagePortraitSize.height);
-//               self.messageContentView.backgroundColor = [UIColor colorWithRed:125/255.0 green:232/255.0 blue:103/255.0 alpha:1];
+               CGRectMake(portraitImageX, PortraitImageViewTop, protraitWidth,
+                          protraitHeight);
                self.messageContentView.backgroundColor = UIColor.clearColor;
            }
            self.messageContentView.contentSize = CGSizeMake(DefaultMessageContentViewWidth,self.baseContentView.bounds.size.height - ContentViewBottom);

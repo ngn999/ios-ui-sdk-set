@@ -458,9 +458,9 @@ NSString *const KNotificationMessageBaseCellUpdateCanReceiptStatus =
                     rect.origin.y = messageContentViewY;
                 } else {
                     if (self.showPortrait) {
-                        rect.origin.x = weakSelf.baseContentView.bounds.size.width - (size.width + HeadAndContentSpacing + protraitWidth + PortraitViewEdgeSpace);
+                        rect.origin.x = self.baseContentView.bounds.size.width - (size.width + HeadAndContentSpacing + protraitWidth + PortraitViewEdgeSpace);
                     } else {
-                        rect.origin.x = weakSelf.baseContentView.bounds.size.width - (size.width + PortraitViewEdgeSpace);
+                        rect.origin.x = self.baseContentView.bounds.size.width - (size.width + PortraitViewEdgeSpace);
                     }
                     if (size.height < self.portraitImageView.frame.size.height) {
                         rect.origin.y = (self.portraitImageView.frame.size.height-size.height)/2;

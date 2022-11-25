@@ -118,6 +118,16 @@ static NSString *const rcUnknownMessageCellIndentifier = @"rcUnknownMessageCellI
     return self;
 }
 
+- (id)initWithConversationType:(RCConversationType)conversationType targetId:(NSString *)targetId enableSyncReadStatus:(BOOL)enable{
+    self = [super init];
+    if (self) {
+        self.conversationType = conversationType;
+        self.targetId = targetId;
+        self.enableSyncReadStatus = enable;
+    }
+    return self;
+}
+
 - (id)initWithCoder:(NSCoder *)aDecoder {
     self = [super initWithCoder:aDecoder];
     if (self) {

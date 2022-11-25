@@ -79,12 +79,17 @@ typedef enum : NSUInteger {
  */
 - (id)initWithConversationType:(RCConversationType)conversationType targetId:(NSString *)targetId;
 
+- (id)initWithConversationType:(RCConversationType)conversationType targetId:(NSString *)targetId enableSyncReadStatus:(BOOL) enable;
+
 #pragma mark - 会话属性
 
 /*!
  当前会话的会话类型
  */
 @property (nonatomic) RCConversationType conversationType;
+
+// 当前这个会话, 是否开启多端已读同步
+@property (nonatomic, assign) BOOL enableSyncReadStatus;
 
 /*!
  目标会话ID

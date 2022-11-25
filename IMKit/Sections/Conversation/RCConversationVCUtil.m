@@ -481,8 +481,7 @@
     //单聊如果开启了已读回执，同步阅读状态功能可以复用已读回执，不需要发送同步命令。
     if ((self.chatVC.conversationType == ConversationType_PRIVATE &&
          ![RCKitConfigCenter.message.enabledReadReceiptConversationTypeList containsObject:@(self.chatVC.conversationType)]) ||
-        self.chatVC.conversationType == ConversationType_GROUP || self.chatVC.conversationType == ConversationType_DISCUSSION || self.chatVC.conversationType == ConversationType_Encrypted || self.chatVC.conversationType == ConversationType_APPSERVICE ||
-        self.chatVC.conversationType == ConversationType_PUBLICSERVICE) {
+        self.chatVC.enableSyncReadStatus) {
         if ([self isAutoResponseRobot:self.chatVC.conversationType targetId:self.chatVC.targetId]) {
             return;
         }

@@ -181,7 +181,8 @@ NSString *const RCStickersDownloadFiledNotification = @"RCStickersDownloadFiledN
             [weakSelf handleIconAndCover];
 
             //处理预加载数据
-            [weakSelf handlePreloadPackages];
+            // TODO: 有crash, 临时禁用
+            // [weakSelf handlePreloadPackages];
         }
     }];
 }

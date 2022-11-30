@@ -178,7 +178,8 @@ NSString *const RCStickersDownloadFiledNotification = @"RCStickersDownloadFiledN
             [weakSelf refreshStickersModule];
 
             //下载icon和cover
-            [weakSelf handleIconAndCover];
+            // TODO: 有crash, 临时禁用
+            // [weakSelf handleIconAndCover];
 
             //处理预加载数据
             // TODO: 有crash, 临时禁用

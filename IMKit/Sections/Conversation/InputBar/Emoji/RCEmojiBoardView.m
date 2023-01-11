@@ -10,7 +10,6 @@
 #import "RCPageControl.h"
 #import "RCEmoticonPackage.h"
 #import "RCKitCommonDefine.h"
-#import "RCExtensionModule.h"
 #import "RCExtensionService.h"
 #import "RCKitConfig.h"
 #import "RCEmojiTabView.h"
@@ -620,8 +619,10 @@ static int rc_currentSelectIndexPage;
         [self cleanDefaultEmoji];
        
         [self generateDefaultLayoutParameters];
-//        [self reloadExtensionEmoticonTabSource];
-//        [self loadLabelView];
+        if (pageCtrl) {
+            [pageCtrl removeFromSuperview];
+            pageCtrl = nil;
+        }
         [self loadCustomerEmoticonPackage];
     }
 }

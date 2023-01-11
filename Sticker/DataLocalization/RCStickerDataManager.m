@@ -12,6 +12,8 @@
 #import "RCUnzip.h"
 #import "RCStickerModule.h"
 #import "RCStickerUtility.h"
+#import "RCSThreadLock.h"
+
 
 NSString *const RCStickersDownloadingNotification = @"RCStickersDownloadingNotification";
 
@@ -60,6 +62,10 @@ NSString *const RCStickersDownloadFiledNotification = @"RCStickersDownloadFiledN
  */
 @property (nonatomic, strong) NSMutableDictionary *downloadingPackages;
 
+@property(nonatomic, strong) RCSThreadLock *packagesConfigLock;
+@property(nonatomic, strong) RCSThreadLock *preloadPackagesLock;
+@property(nonatomic, strong) RCSThreadLock *manualLoadPackagesLock;
+@property(nonatomic, strong) RCSThreadLock *downloadingPackagesLock;
 @end
 
 @implementation RCStickerDataManager
@@ -77,9 +83,159 @@ NSString *const RCStickersDownloadFiledNotification = @"RCStickersDownloadFiledN
     self = [super init];
     if (self) {
         self.downloadingPackages = [[NSMutableDictionary alloc] init];
+        self.packagesConfigLock = [[RCSThreadLock alloc] init];
+        self.preloadPackagesLock = [[RCSThreadLock alloc] init];
+        self.manualLoadPackagesLock = [[RCSThreadLock alloc] init];
+        self.downloadingPackagesLock = [[RCSThreadLock alloc] init];
         [self managerInitialize];
     }
     return self;
+}
+
+#pragma mark - preloadPackages
+
+- (NSArray *)preloadPackagesData {
+    __block NSArray *array = nil;
+    [self.preloadPackagesLock performReadLockBlock:^{
+        array = [self.preloadPackages copy];
+    }];
+    return array;
+}
+
+- (void)savePreloadPackages:(NSArray *)array {
+    [self.preloadPackagesLock performWriteLockBlock:^{
+        [self.preloadPackages removeAllObjects];
+        if (array) {
+            [self.preloadPackages addObjectsFromArray:array];
+        }
+    }];
+}
+
+- (NSMutableArray *)preloadPackages {
+    if (!_preloadPackages) {
+        _preloadPackages = [[NSMutableArray alloc] init];
+    }
+    return _preloadPackages;
+}
+
+#pragma mark - manualLoadPackages
+
+- (NSArray *)manualLoadPackagesData {
+    __block NSArray *array = nil;
+    [self.manualLoadPackagesLock performReadLockBlock:^{
+        array = [self.manualLoadPackages copy];
+    }];
+    return array;
+}
+
+- (void)saveManualLoadPackages:(NSArray *)array {
+    [self.manualLoadPackagesLock performWriteLockBlock:^{
+        [self.manualLoadPackages removeAllObjects];
+        if (array) {
+            [self.manualLoadPackages addObjectsFromArray:array];
+        }
+    }];
+}
+
+- (void)removeManualLoadPackages:(id)obj {
+    [self.manualLoadPackagesLock performWriteLockBlock:^{
+        if (obj) {
+            [self.manualLoadPackages removeObject:obj];
+        }
+    }];
+}
+
+- (void)insertManualLoadPackages:(id)obj {
+    [self.manualLoadPackagesLock performWriteLockBlock:^{
+        if (obj) {
+            [self.manualLoadPackages insertObject:obj atIndex:0];
+        }
+    }];
+}
+
+- (NSMutableArray *)manualLoadPackages {
+    if (!_manualLoadPackages) {
+        _manualLoadPackages = [NSMutableArray array];
+    }
+    return _manualLoadPackages;
+}
+
+#pragma mark - preloadPackagesConfig
+
+- (NSArray *)preloadPackagesConfigData {
+    __block NSArray *array = nil;
+    [self.packagesConfigLock performReadLockBlock:^{
+        array = [self.preloadPackagesConfig copy];
+    }];
+    return array;
+}
+
+- (void)savePreloadPackagesConfig:(NSArray *)array {
+    [self.packagesConfigLock performWriteLockBlock:^{
+        [self.preloadPackagesConfig removeAllObjects];
+        if (array) {
+            [self.preloadPackagesConfig addObjectsFromArray:array];
+        }
+    }];
+}
+
+- (NSMutableArray *)preloadPackagesConfig {
+    if (!_preloadPackagesConfig) {
+        _preloadPackagesConfig = [NSMutableArray array];
+    }
+    return _preloadPackagesConfig;
+}
+
+#pragma mark - manualLoadPackagesConfig
+
+- (NSArray *)manualLoadPackagesConfigData {
+    __block NSArray *array = nil;
+    [self.packagesConfigLock performReadLockBlock:^{
+        array = [self.manualLoadPackagesConfig copy];
+    }];
+    return array;
+}
+
+- (void)saveManualLoadPackagesConfig:(NSArray *)array {
+    [self.preloadPackagesLock performWriteLockBlock:^{
+        [self.manualLoadPackagesConfig removeAllObjects];
+        if (array) {
+            [self.manualLoadPackagesConfig addObjectsFromArray:array];
+        }
+    }];
+}
+
+- (NSMutableArray *)manualLoadPackagesConfig {
+    if (!_manualLoadPackagesConfig) {
+        _manualLoadPackagesConfig = [NSMutableArray array];
+    }
+    return _manualLoadPackagesConfig;
+}
+
+#pragma mark - downloadingPackages
+
+- (void)saveDownladingPackage:(id)obj forKey:(NSString *)key {
+    if (!key) {
+        return;
+    }
+    [self.downloadingPackagesLock performWriteLockBlock:^{
+        self.downloadingPackages[key] = obj;
+    }];
+}
+
+- (id)downladingPackageForKey:(NSString *)key {
+    if (!key) {
+        return nil;
+    }
+    __block id obj = nil;
+    [self.downloadingPackagesLock performReadLockBlock:^{
+        obj = self.downloadingPackages[key];
+    }];
+    return obj;
+}
+
+- (void)removeDownloadingPackageForKey:(NSString *)key {
+    [self saveDownladingPackage:nil forKey:key];
 }
 
 - (void)managerInitialize {
@@ -135,32 +291,21 @@ NSString *const RCStickersDownloadFiledNotification = @"RCStickersDownloadFiledN
 
     NSMutableDictionary *totalPackageConfigDict =
         [NSMutableDictionary dictionaryWithContentsOfFile:[self packagesConfigPath]];
-    self.preloadPackagesConfig = [[RCStickerPackageConfig
-        modelArrayWithDictArray:[totalPackageConfigDict objectForKey:RCStickerPreloadKey]] mutableCopy];
-    self.manualLoadPackagesConfig = [[RCStickerPackageConfig
+   NSArray *preloadPackagesConfig = [[RCStickerPackageConfig
+       modelArrayWithDictArray:[totalPackageConfigDict objectForKey:RCStickerPreloadKey]] mutableCopy];
+    [self savePreloadPackagesConfig:preloadPackagesConfig];
+    
+    NSArray *manualLoadPackagesConfig = [[RCStickerPackageConfig
         modelArrayWithDictArray:[totalPackageConfigDict objectForKey:RCStickerManualLoadKey]] mutableCopy];
+    [self saveManualLoadPackagesConfig:manualLoadPackagesConfig];
 
     NSMutableDictionary *totalPackageDict = [NSMutableDictionary dictionaryWithContentsOfFile:[self packagesPath]];
-    self.preloadPackages =
-        [[RCStickerPackage modelArrayWithDictArray:[totalPackageDict objectForKey:RCStickerPreloadKey]] mutableCopy];
-    self.manualLoadPackages =
-        [[RCStickerPackage modelArrayWithDictArray:[totalPackageDict objectForKey:RCStickerManualLoadKey]] mutableCopy];
-
-    if (self.preloadPackagesConfig == nil) {
-        self.preloadPackagesConfig = [[NSMutableArray alloc] init];
-    }
-
-    if (self.manualLoadPackagesConfig == nil) {
-        self.manualLoadPackagesConfig = [[NSMutableArray alloc] init];
-    }
-
-    if (self.preloadPackages == nil) {
-        self.preloadPackages = [[NSMutableArray alloc] init];
-    }
-
-    if (self.manualLoadPackages == nil) {
-        self.manualLoadPackages = [[NSMutableArray alloc] init];
-    }
+    NSArray *preloadPackages =  [[RCStickerPackage modelArrayWithDictArray:[totalPackageDict objectForKey:RCStickerPreloadKey]] mutableCopy];
+    [self savePreloadPackages:preloadPackages];
+    
+    NSArray *manualLoadPackages =
+    [[RCStickerPackage modelArrayWithDictArray:[totalPackageDict objectForKey:RCStickerManualLoadKey]] mutableCopy];
+    [self saveManualLoadPackages:manualLoadPackages];
 }
 
 - (void)syncPackagesConfig {
@@ -170,11 +315,14 @@ NSString *const RCStickersDownloadFiledNotification = @"RCStickersDownloadFiledN
         // Server 数据下来先将packagesConfig内存数组更新
         if (result.success) {
             NSDictionary *totalPackageConfigDict = result.data;
-            weakSelf.preloadPackagesConfig = [[RCStickerPackageConfig
+           NSArray *preloadPackagesConfig = [[RCStickerPackageConfig
                 modelArrayWithDictArray:[totalPackageConfigDict objectForKey:RCStickerPreloadKey]] mutableCopy];
-            weakSelf.manualLoadPackagesConfig = [[RCStickerPackageConfig
-                modelArrayWithDictArray:[totalPackageConfigDict objectForKey:RCStickerManualLoadKey]] mutableCopy];
-
+            [weakSelf savePreloadPackagesConfig:preloadPackagesConfig];
+            
+            NSArray *manualLoadPackagesConfig = [[RCStickerPackageConfig
+                                                  modelArrayWithDictArray:[totalPackageConfigDict objectForKey:RCStickerManualLoadKey]] mutableCopy];
+            [self saveManualLoadPackagesConfig:manualLoadPackagesConfig];
+            
             [weakSelf refreshStickersModule];
 
             //下载icon和cover
@@ -192,8 +340,10 @@ NSString *const RCStickersDownloadFiledNotification = @"RCStickersDownloadFiledN
  处理icon和cover
  */
 - (void)handleIconAndCover {
-    NSMutableArray *tmpArray = [NSMutableArray arrayWithArray:[self.preloadPackagesConfig copy]];
-    [tmpArray addObjectsFromArray:[self.manualLoadPackagesConfig copy]];
+    NSArray *preloadPackagesConfig = [self preloadPackagesConfigData];
+    NSMutableArray *tmpArray = [NSMutableArray arrayWithArray:[preloadPackagesConfig copy]];
+    NSArray *manualLoadPackagesConfig = [self manualLoadPackagesConfigData];
+    [tmpArray addObjectsFromArray:[manualLoadPackagesConfig copy]];
     for (RCStickerPackageConfig *packageConfig in tmpArray) {
         if (![self packageIconById:packageConfig.packageId]) {
             [self getPackageIcon:packageConfig.packageId
@@ -213,9 +363,11 @@ NSString *const RCStickersDownloadFiledNotification = @"RCStickersDownloadFiledN
  */
 - (void)handlePreloadPackages {
     //先将本地预加载表情包中未下载好的移除，并且删除新拉下来的数据中不包含的表情包
-    NSMutableArray *copyArray = [self.preloadPackages mutableCopy];
-    [self.preloadPackages removeAllObjects];
-    for (RCStickerPackageConfig *packageConfig in self.preloadPackagesConfig) {
+    NSArray *array = [self preloadPackagesData];
+    NSMutableArray *copyArray = [array mutableCopy];
+    NSMutableArray *preloadPackages = [NSMutableArray array];
+    NSArray *preloadPackagesConfig = [self preloadPackagesConfigData];
+    for (RCStickerPackageConfig *packageConfig in preloadPackagesConfig) {
         BOOL isDownloaded = NO;
         BOOL isDeleted = NO;
         for (RCStickerPackage *copyPackage in copyArray) {
@@ -229,10 +381,10 @@ NSString *const RCStickersDownloadFiledNotification = @"RCStickersDownloadFiledN
         [package setConfig:packageConfig];
         package.isDownloaded = isDownloaded;
         package.isDeleted = isDeleted;
-        [self.preloadPackages addObject:package];
+        [preloadPackages addObject:package];
     }
-
-    for (RCStickerPackage *package in self.preloadPackages) {
+    [self savePreloadPackages:preloadPackages];
+    for (RCStickerPackage *package in preloadPackages) {
         if (package.isDownloaded == NO && package.isDeleted == NO) {
             [self downloadPackagesZip:package.packageId
                 progress:^(int progress) {
@@ -254,7 +406,7 @@ NSString *const RCStickersDownloadFiledNotification = @"RCStickersDownloadFiledN
                       error:(void (^)(int errorCode))errorBlock {
 
     __weak typeof(self) weakSelf = self;
-    [self.downloadingPackages setObject:@(0) forKey:packageId];
+    [self saveDownladingPackage:@(0) forKey:packageId];
     [RCStickerHTTPUtility
         getPackageZipWith:packageId
          completionHandle:^(RCStickerHTTPRequestResult *result) {
@@ -264,8 +416,7 @@ NSString *const RCStickersDownloadFiledNotification = @"RCStickersDownloadFiledN
                  [[RCStickerDownloader shareDownloader] downloadWithURLString:downloadURL
                      identifier:packageId
                      progress:^(int progress) {
-
-                         [weakSelf.downloadingPackages setObject:@(progress) forKey:packageId];
+                     [weakSelf saveDownladingPackage:@(progress) forKey:packageId];
                          [[NSNotificationCenter defaultCenter] postNotificationName:RCStickersDownloadingNotification
                                                                              object:nil
                                                                            userInfo:@{
@@ -289,7 +440,7 @@ NSString *const RCStickersDownloadFiledNotification = @"RCStickersDownloadFiledN
                          BOOL zipSuccess =
                              unzipFile((char *)[zipPath UTF8String], (char *)[[self packagesDirPath] UTF8String]);
                          if (!zipSuccess) {
-                             [weakSelf.downloadingPackages removeObjectForKey:packageId];
+                             [weakSelf removeDownloadingPackageForKey:packageId];
                              [[NSNotificationCenter defaultCenter]
                                  postNotificationName:RCStickersDownloadFiledNotification
                                                object:nil
@@ -319,7 +470,7 @@ NSString *const RCStickersDownloadFiledNotification = @"RCStickersDownloadFiledN
                              stickers = [RCStickerSingle
                                  modelArrayWithDictArray:[stickersDict objectForKey:RCStickerStickersKey]];
                          } else {
-                             [weakSelf.downloadingPackages removeObjectForKey:packageId];
+                             [weakSelf removeDownloadingPackageForKey:packageId];
                              [[NSNotificationCenter defaultCenter]
                                  postNotificationName:RCStickersDownloadFiledNotification
                                                object:nil
@@ -354,7 +505,8 @@ NSString *const RCStickersDownloadFiledNotification = @"RCStickersDownloadFiledN
                          [FileManager removeItemAtPath:zipDirPath error:nil];
 
                          // 4: 将本地isDownload属性置成YES,内存中的下载进度变成 100
-                         [weakSelf.downloadingPackages removeObjectForKey:packageId];
+                     [weakSelf removeDownloadingPackageForKey:packageId];
+
                          RCStickerPackageType packageType = [self getPackageType:packageId];
                          if (packageType == RCStickerPackageTypePreload) {
                              RCStickerPackage *package = [self packageById:packageId];
@@ -365,7 +517,7 @@ NSString *const RCStickersDownloadFiledNotification = @"RCStickersDownloadFiledN
                              [package setConfig:config];
                              package.isDownloaded = YES;
                              package.isDeleted = NO;
-                             [self.manualLoadPackages insertObject:package atIndex:0];
+                             [self insertManualLoadPackages:package];
                          }
 
                          // 5: 将json文件转换成 NSArray<RCStickerSingle *> 格式返回给block
@@ -389,7 +541,9 @@ NSString *const RCStickersDownloadFiledNotification = @"RCStickersDownloadFiledN
 
                      }
                      error:^(int errorCode) {
-                         [weakSelf.downloadingPackages removeObjectForKey:packageId];
+//                         [weakSelf.downloadingPackages removeObjectForKey:packageId];
+                            [weakSelf removeDownloadingPackageForKey:packageId];
+
                          [[NSNotificationCenter defaultCenter] postNotificationName:RCStickersDownloadFiledNotification
                                                                              object:nil
                                                                            userInfo:@{
@@ -402,7 +556,8 @@ NSString *const RCStickersDownloadFiledNotification = @"RCStickersDownloadFiledN
                      }];
 
              } else {
-                 [weakSelf.downloadingPackages removeObjectForKey:packageId];
+                 [weakSelf removeDownloadingPackageForKey:packageId];
+
                  [[NSNotificationCenter defaultCenter] postNotificationName:RCStickersDownloadFiledNotification
                                                                      object:nil
                                                                    userInfo:@{
@@ -419,12 +574,14 @@ NSString *const RCStickersDownloadFiledNotification = @"RCStickersDownloadFiledN
 #pragma mark - Local data query
 
 - (RCStickerPackage *)packageById:(NSString *)packageId {
-    for (RCStickerPackage *package in self.preloadPackages) {
+    NSArray *preloadPackages = [self preloadPackagesData];
+    for (RCStickerPackage *package in preloadPackages) {
         if ([package.packageId isEqualToString:packageId]) {
             return package;
         }
     }
-    for (RCStickerPackage *package in self.manualLoadPackages) {
+    NSArray *manualLoadPackages = [self manualLoadPackagesData];
+    for (RCStickerPackage *package in manualLoadPackages) {
         if ([package.packageId isEqualToString:packageId]) {
             return package;
         }
@@ -433,12 +590,15 @@ NSString *const RCStickersDownloadFiledNotification = @"RCStickersDownloadFiledN
 }
 
 - (RCStickerPackageConfig *)packageConfigById:(NSString *)packageId {
-    for (RCStickerPackageConfig *packageConfig in self.preloadPackagesConfig) {
+    NSArray *preloadPackagesConfig = [self preloadPackagesConfigData];
+    for (RCStickerPackageConfig *packageConfig in preloadPackagesConfig) {
         if ([packageConfig.packageId isEqualToString:packageId]) {
             return packageConfig;
         }
     }
-    for (RCStickerPackageConfig *packageConfig in self.manualLoadPackagesConfig) {
+    
+    NSArray *manualLoadPackagesConfig = [self manualLoadPackagesConfigData];
+    for (RCStickerPackageConfig *packageConfig in manualLoadPackagesConfig) {
         if ([packageConfig.packageId isEqualToString:packageId]) {
             return packageConfig;
         }
@@ -510,7 +670,8 @@ NSString *const RCStickersDownloadFiledNotification = @"RCStickersDownloadFiledN
 
 - (NSArray<RCStickerPackage *> *)getAllDownloadedPackages {
     NSMutableArray *allDownloadedPackges = [[NSMutableArray alloc] init];
-    for (RCStickerPackage *package in self.preloadPackages) {
+    NSArray *preloadPackages = [self preloadPackagesData];
+    for (RCStickerPackage *package in preloadPackages) {
         if (package.isDownloaded) {
             RCStickerPackageConfig *packageConfig = [self packageConfigById:package.packageId];
             if (packageConfig) {
@@ -518,7 +679,8 @@ NSString *const RCStickersDownloadFiledNotification = @"RCStickersDownloadFiledN
             }
         }
     }
-    for (RCStickerPackage *package in self.manualLoadPackages) {
+    NSArray *manualLoadPackages = [self manualLoadPackagesData];
+    for (RCStickerPackage *package in manualLoadPackages) {
         if (package.isDownloaded) {
             [allDownloadedPackges addObject:package];
         }
@@ -590,7 +752,7 @@ NSString *const RCStickersDownloadFiledNotification = @"RCStickersDownloadFiledN
 }
 
 - (NSNumber *)getDownloadProgress:(NSString *)packageId {
-    NSNumber *progress = [self.downloadingPackages objectForKey:packageId];
+    NSNumber *progress = [self downladingPackageForKey:packageId];
     if (progress) {
         return progress;
     }
@@ -693,14 +855,15 @@ NSString *const RCStickersDownloadFiledNotification = @"RCStickersDownloadFiledN
 }
 
 - (NSArray<RCStickerPackage *> *)getAllPackages {
+    NSArray *preloadPackages = [self preloadPackagesData];
     NSMutableArray *packagesConfig = [[NSMutableArray alloc] init];
-    for (RCStickerPackage *package in self.preloadPackages) {
+    for (RCStickerPackage *package in preloadPackages) {
         if (package.isDeleted == NO) {
             [packagesConfig addObject:package];
         }
     }
-
-    for (RCStickerPackage *package in self.manualLoadPackages) {
+    NSArray *manualLoadPackages = [self manualLoadPackagesData];
+    for (RCStickerPackage *package in manualLoadPackages) {
         [packagesConfig addObject:package];
     }
     return [packagesConfig copy];
@@ -710,18 +873,22 @@ NSString *const RCStickersDownloadFiledNotification = @"RCStickersDownloadFiledN
 
     NSMutableArray *packageConfigArray;
     switch (categoryType) {
-    case RCStickerCategoryTypeRecommend:
-        packageConfigArray = [[NSMutableArray alloc] init];
-        for (RCStickerPackageConfig *packageConfig in self.manualLoadPackagesConfig) {
-            BOOL isDownload = NO;
-            for (RCStickerPackage *package in self.manualLoadPackages) {
-                if ([packageConfig.packageId isEqualToString:package.packageId] && package.isDownloaded == YES) {
-                    isDownload = YES;
-                    break;
+        case RCStickerCategoryTypeRecommend: {
+            packageConfigArray = [[NSMutableArray alloc] init];
+            NSArray *manualLoadPackagesConfig = [self manualLoadPackagesConfigData];
+            for (RCStickerPackageConfig *packageConfig in manualLoadPackagesConfig) {
+                BOOL isDownload = NO;
+                NSArray *manualLoadPackages = [self manualLoadPackagesData];
+
+                for (RCStickerPackage *package in manualLoadPackages) {
+                    if ([packageConfig.packageId isEqualToString:package.packageId] && package.isDownloaded == YES) {
+                        isDownload = YES;
+                        break;
+                    }
                 }
-            }
-            if (!isDownload) {
-                [packageConfigArray addObject:packageConfig];
+                if (!isDownload) {
+                    [packageConfigArray addObject:packageConfig];
+                }
             }
         }
         break;
@@ -754,7 +921,7 @@ NSString *const RCStickersDownloadFiledNotification = @"RCStickersDownloadFiledN
 
 - (void)deletePackage:(NSString *)packageId {
     RCStickerPackage *package = [self packageById:packageId];
-    [self.downloadingPackages removeObjectForKey:packageId];
+    [self removeDownloadingPackageForKey:packageId];
     if (package) {
         NSString *stickersPath =
             [[self packagesDirPath] stringByAppendingPathComponent:[NSString stringWithFormat:@"%@.plist", packageId]];
@@ -767,7 +934,7 @@ NSString *const RCStickersDownloadFiledNotification = @"RCStickersDownloadFiledN
             break;
         case RCStickerPackageTypeManual:
         case RCStickerPackageTypeUnknow:
-            [self.manualLoadPackages removeObject:package];
+                [self removeManualLoadPackages:package];
             break;
         }
         [self refreshStickersModule];
@@ -787,16 +954,22 @@ NSString *const RCStickersDownloadFiledNotification = @"RCStickersDownloadFiledN
 
 - (void)writeDataInDisk {
     NSMutableDictionary *totalPackageConfigDict = [[NSMutableDictionary alloc] init];
-    [totalPackageConfigDict setObject:[RCStickerPackageConfig dictArrayWithModelArray:self.preloadPackagesConfig]
+    NSArray *preloadPackagesConfig = [self preloadPackagesConfigData];
+    [totalPackageConfigDict setObject:[RCStickerPackageConfig dictArrayWithModelArray:preloadPackagesConfig]
                                forKey:RCStickerPreloadKey];
-    [totalPackageConfigDict setObject:[RCStickerPackageConfig dictArrayWithModelArray:self.manualLoadPackagesConfig]
+    
+    NSArray *manualLoadPackagesConfig = [self manualLoadPackagesConfigData];
+    [totalPackageConfigDict setObject:[RCStickerPackageConfig dictArrayWithModelArray:manualLoadPackagesConfig]
                                forKey:RCStickerManualLoadKey];
     [totalPackageConfigDict writeToFile:[self packagesConfigPath] atomically:YES];
 
     NSMutableDictionary *totalPackageDict = [[NSMutableDictionary alloc] init];
-    [totalPackageDict setObject:[RCStickerPackage dictArrayWithModelArray:self.preloadPackages]
+    NSArray *preloadPackages = [self preloadPackagesData];
+    [totalPackageDict setObject:[RCStickerPackage dictArrayWithModelArray:preloadPackages]
                          forKey:RCStickerPreloadKey];
-    [totalPackageDict setObject:[RCStickerPackage dictArrayWithModelArray:self.manualLoadPackages]
+    
+    NSArray *manualLoadPackages = [self manualLoadPackagesData];
+    [totalPackageDict setObject:[RCStickerPackage dictArrayWithModelArray:manualLoadPackages]
                          forKey:RCStickerManualLoadKey];
     [totalPackageDict writeToFile:[self packagesPath] atomically:YES];
 }
@@ -837,12 +1010,15 @@ NSString *const RCStickersDownloadFiledNotification = @"RCStickersDownloadFiledN
 }
 
 - (RCStickerPackageType)getPackageType:(NSString *)packageId {
-    for (RCStickerPackageConfig *packageConfig in self.preloadPackagesConfig) {
+    NSArray *preloadPackagesConfig = [self preloadPackagesConfigData];
+    for (RCStickerPackageConfig *packageConfig in preloadPackagesConfig) {
         if ([packageConfig.packageId isEqualToString:packageId]) {
             return RCStickerPackageTypePreload;
         }
     }
-    for (RCStickerPackageConfig *packageConfig in self.manualLoadPackagesConfig) {
+    
+    NSArray *manualLoadPackagesConfig = [self manualLoadPackagesConfigData];
+    for (RCStickerPackageConfig *packageConfig in manualLoadPackagesConfig) {
         if ([packageConfig.packageId isEqualToString:packageId]) {
             return RCStickerPackageTypeManual;
         }

@@ -416,14 +416,14 @@ static NSString *const RCIMKitVersion = @"5.3.4_opensource";
                         senderUserInfo.portraitUri = [userInfo.portraitUri copy];
                     }
                 }
-                RCUserInfo *userInfo = [[RCIM sharedRCIM] getUserInfoCache:message.content.senderUserInfo.userId];
+                RCUserInfo *userInfo = [[RCIM sharedRCIM] getUserInfoCache:messageContent.senderUserInfo.userId];
                 if (userInfo.alias) {
-                    message.content.senderUserInfo.alias = userInfo.alias;
-                    [[RCUserInfoCacheManager sharedManager] updateUserInfo:message.content.senderUserInfo
-                                                                 forUserId:message.content.senderUserInfo.userId];
+                    messageContent.senderUserInfo.alias = userInfo.alias;
+                    [[RCUserInfoCacheManager sharedManager] updateUserInfo:messageContent.senderUserInfo
+                                                                 forUserId:messageContent.senderUserInfo.userId];
                 } else {
-                    [[RCUserInfoCacheManager sharedManager] updateUserInfo:message.content.senderUserInfo
-                                                                 forUserId:message.content.senderUserInfo.userId];
+                    [[RCUserInfoCacheManager sharedManager] updateUserInfo:messageContent.senderUserInfo
+                                                                 forUserId:messageContent.senderUserInfo.userId];
                 }
             }
         }

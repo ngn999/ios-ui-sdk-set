@@ -409,22 +409,22 @@ static NSString *const RCIMKitVersion = @"5.3.4_opensource";
     if (senderUserInfo.userId) {
         if (![senderUserInfo.userId isEqualToString:[RCIMClient sharedRCIMClient].currentUserInfo.userId]) {
             if (senderUserInfo.name.length > 0 || senderUserInfo.portraitUri.length > 0) {
-                if (senderUserInfo.portraitUri == nil || [RCUtilities isLocalPath:senderUserInfo.portraitUri]) {
-                    RCUserInfo *userInfo = [[RCUserInfoCacheManager sharedManager]
-                                            getUserInfoFromCacheOnly:senderUserInfo.userId];
+                [[RCUserInfoCacheManager sharedManager] getUserInfoFromCacheOnly:messageContent.senderUserInfo.userId complete:^(RCUserInfo *userInfo) {
+                 if (senderUserInfo.portraitUri == nil || [RCUtilities isLocalPath:senderUserInfo.portraitUri]) {
                     if (userInfo) {
                         senderUserInfo.portraitUri = [userInfo.portraitUri copy];
                     }
                 }
-                RCUserInfo *userInfo = [[RCIM sharedRCIM] getUserInfoCache:messageContent.senderUserInfo.userId];
-                if (userInfo.alias) {
-                    messageContent.senderUserInfo.alias = userInfo.alias;
-                    [[RCUserInfoCacheManager sharedManager] updateUserInfo:messageContent.senderUserInfo
-                                                                 forUserId:messageContent.senderUserInfo.userId];
-                } else {
-                    [[RCUserInfoCacheManager sharedManager] updateUserInfo:messageContent.senderUserInfo
-                                                                 forUserId:messageContent.senderUserInfo.userId];
-                }
+               
+                 if (userInfo.alias) {
+                     messageContent.senderUserInfo.alias = userInfo.alias;
+                     [[RCUserInfoCacheManager sharedManager] updateUserInfo:messageContent.senderUserInfo
+                                                                  forUserId:messageContent.senderUserInfo.userId];
+                 } else {
+                     [[RCUserInfoCacheManager sharedManager] updateUserInfo:messageContent.senderUserInfo
+                                                                  forUserId:messageContent.senderUserInfo.userId];
+                 }
+               }];
             }
         }
     }
@@ -433,11 +433,14 @@ static NSString *const RCIMKitVersion = @"5.3.4_opensource";
         RCUserInfoUpdateMessage *userInfoMesasge = (RCUserInfoUpdateMessage *)messageContent;
         if ([userInfoMesasge.userInfoList count] > 0) {
             for (RCUserInfo *userInfo in userInfoMesasge.userInfoList) {
-                if (![userInfo.userId isEqualToString:[RCIMClient sharedRCIMClient].currentUserInfo.userId] &&
-                    ![[RCUserInfoCacheManager sharedManager] getUserInfo:userInfo.userId]) {
-                    if (userInfo.name.length > 0 || userInfo.portraitUri.length > 0) {
-                        [[RCUserInfoCacheManager sharedManager] updateUserInfo:userInfo forUserId:userInfo.userId];
-                    }
+                if (![userInfo.userId isEqualToString:[RCIMClient sharedRCIMClient].currentUserInfo.userId]) {
+                    [[RCUserInfoCacheManager sharedManager] getUserInfo:userInfo.userId complete:^(RCUserInfo *info) {
+                        if(!info) {
+                            if (userInfo.name.length > 0 || userInfo.portraitUri.length > 0) {
+                                [[RCUserInfoCacheManager sharedManager] updateUserInfo:userInfo forUserId:userInfo.userId];
+                            }
+                        }
+                    }];
                 }
             }
         }

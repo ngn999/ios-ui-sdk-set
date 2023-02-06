@@ -23,6 +23,9 @@
 
 - (RCUserInfo *)getUserInfo:(NSString *)userId;
 
+- (void)getUserInfo:(NSString *)userId
+         completion:(void(^)(RCUserInfo *))completion;
+
 - (void)updateUserInfo:(RCUserInfo *)userInfo forUserId:(NSString *)userId;
 
 - (void)clearUserInfoNetworkCacheOnly:(NSString *)userId;

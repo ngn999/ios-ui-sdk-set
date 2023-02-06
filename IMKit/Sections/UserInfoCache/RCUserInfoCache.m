@@ -33,6 +33,30 @@
     return defaultCache;
 }
 
+- (void)getUserInfo:(NSString *)userId
+         completion:(void(^)(RCUserInfo *))completion {
+    RCUserInfo *cacheUserInfo = self.cache[userId];
+    if (!cacheUserInfo) {
+        RCUserInfoCacheDBHelper *helper = rcUserInfoReadDBHelper;
+        [helper selectUserInfoFromDB:userId completion:^(RCUserInfo * dbUserInfo) {
+            RCUserInfo *info = nil;
+            if (dbUserInfo) {
+                [self.cache setObject:dbUserInfo forKey:userId];
+                info = [[RCUserInfo alloc] initWithUserId:dbUserInfo.userId name:dbUserInfo.name portrait:dbUserInfo.portraitUri];
+                info.alias = dbUserInfo.alias;
+                info.extra = dbUserInfo.extra;
+            }
+            if (completion) {
+                completion(info);
+            }
+        }];
+    } else {
+        if (completion) {
+            completion(cacheUserInfo);
+        }
+    }
+}
+
 - (RCUserInfo *)getUserInfo:(NSString *)userId {
     RCUserInfo *cacheUserInfo = self.cache[userId];
     if (!cacheUserInfo) {

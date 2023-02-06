@@ -7,12 +7,14 @@
 //
 
 #import "RCUserInfoCacheDBHelper.h"
+#import "RCloudFMDatabaseQueue.h"
 
 int const RCKitStorageVersion = 4;
 
 @interface RCUserInfoCacheDBHelper ()
 
 @property (nonatomic, strong) RCloudFMDatabase *workingDB;
+@property(nonatomic, strong) RCloudFMDatabaseQueue *queue;
 
 @end
 
@@ -22,6 +24,7 @@ int const RCKitStorageVersion = 4;
     self = [super init];
     if (self) {
         self.workingDB = [[RCloudFMDatabase alloc] initWithPath:storagePath];
+        self.queue = [[RCloudFMDatabaseQueue alloc] initWithPath:storagePath];
         [self createDBTableIfNeed];
     }
     return self;
@@ -76,6 +79,10 @@ int const RCKitStorageVersion = 4;
     if (self.workingDB) {
         [self.workingDB close];
         self.workingDB = nil;
+    }
+    if(self.queue) {
+        [self.queue close];
+        self.queue = nil;
     }
 }
 
@@ -289,6 +296,34 @@ int const RCKitStorageVersion = 4;
     if ([self.workingDB open]) {
         [self.workingDB executeUpdate:@"DELETE FROM USER_INFO"];
     }
+}
+
+
+- (void)selectUserInfoFromDB:(NSString *)userId
+                  completion:(void(^)(RCUserInfo *))completion {
+    [self.queue inDatabase:^(RCloudFMDatabase *db) {
+            RCloudFMResultSet *resultSet =
+                [db executeQuery:@"SELECT * FROM USER_INFO WHERE user_id = ?", userId];
+            if ([resultSet next]) {
+                RCUserInfo *dbUserInfo = [[RCUserInfo alloc] init];
+                dbUserInfo.userId = [resultSet stringForColumn:@"user_id"];
+                dbUserInfo.name = [resultSet stringForColumn:@"name"];
+                dbUserInfo.alias = [resultSet stringForColumn:@"alias"];
+                dbUserInfo.portraitUri = [resultSet stringForColumn:@"portrait_uri"];
+                dbUserInfo.extra = [resultSet stringForColumn:@"extra"];
+                [resultSet close];
+                if (completion) {
+                    completion(dbUserInfo);
+                }
+                return;
+            } else {
+                [resultSet close];
+            }
+            if (completion) {
+                completion(nil);
+            }
+    }];
+    
 }
 
 @end

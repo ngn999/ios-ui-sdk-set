@@ -201,6 +201,21 @@ NSString *const RCKitDispatchPublicServiceInfoNotification = @"RCKitDispatchPubl
     }
 }
 
+- (void)getUserInfoFromCacheOnly:(NSString *)userId
+                        complete:(void (^)(RCUserInfo *userInfo))completeBlock {
+    if (userId) {
+        [[RCUserInfoCache sharedCache] getUserInfo:userId completion:^(RCUserInfo *cacheUserInfo) {
+            if (completeBlock) {
+                completeBlock(cacheUserInfo);
+            }
+        }];
+    } else {
+        if (completeBlock) {
+            completeBlock(nil);
+        }
+    }
+}
+
 - (void)updateUserInfo:(RCUserInfo *)userInfo forUserId:(NSString *)userId {
     if (userId.length > 0 && !userInfo){
         [[RCUserInfoCache sharedCache] clearUserInfo:userId];

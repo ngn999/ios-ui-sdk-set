@@ -46,6 +46,9 @@ FOUNDATION_EXPORT NSString *const RCKitDispatchPublicServiceInfoNotification;
 
 //只获取当前cache中的用户信息，不进行任何回调
 - (RCUserInfo *)getUserInfoFromCacheOnly:(NSString *)userId;
+//只获取当前cache中的用户信息，不进行任何回调[线程安全]
+- (void)getUserInfoFromCacheOnly:(NSString *)userId
+                        complete:(void (^)(RCUserInfo *userInfo))completeBlock;
 
 - (void)updateUserInfo:(RCUserInfo *)userInfo forUserId:(NSString *)userId;
 

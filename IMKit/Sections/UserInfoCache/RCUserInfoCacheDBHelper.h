@@ -64,4 +64,11 @@
 
 - (void)deleteAllUserInfoFromDB;
 
+
+/// 请求用户信息[线程安全]
+/// - Parameters:
+///   - userId: 用户ID
+///   - completion: 回调
+- (void)selectUserInfoFromDB:(NSString *)userId
+                  completion:(void(^)(RCUserInfo *))completion;
 @end

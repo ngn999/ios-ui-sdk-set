@@ -21,6 +21,12 @@ NS_ASSUME_NONNULL_BEGIN
      forwardConversationType:(RCConversationType)forwardConversationType
                    completed:(void (^)(BOOL success))completedBlock;
 
+- (void)doForwardCombineMessageList:(NSArray *)messageList
+            conversationList:(NSArray *)conversationList
+                   isCombine:(BOOL)isCombine
+     forwardConversationType:(RCConversationType)forwardConversationType
+                   completed:(void (^)(NSMutableArray * _Nonnull summaryList, NSMutableArray * _Nonnull nameList, NSMutableString * _Nonnull htmlContent))completedBlock;
+
 @end
 
 NS_ASSUME_NONNULL_END

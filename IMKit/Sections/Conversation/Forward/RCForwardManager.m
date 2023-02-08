@@ -153,6 +153,72 @@
         }
     }
 }
+- (void)doForwardCombineMessageList:(NSArray *)messageList
+            conversationList:(NSArray *)conversationList
+                   isCombine:(BOOL)isCombine
+     forwardConversationType:(RCConversationType)forwardConversationType
+                          completed:(void (^)(NSMutableArray * _Nonnull summaryList, NSMutableArray * _Nonnull nameList, NSMutableString * _Nonnull htmlContent))completedBlock {
+    __weak typeof(self) weakSelf = self;
+    dispatch_async(self.rcForwardQueue, ^{
+        if (!messageList || conversationList.count <= 0 || !forwardConversationType) {
+            dispatch_async(dispatch_get_main_queue(), ^{
+                completedBlock(@[],@[],@"");
+            });
+        }
+        //组装消息
+        NSMutableArray *nameList = [[NSMutableArray alloc] init];
+        NSMutableArray *summaryList = [[NSMutableArray alloc] init];
+        NSString *baseHead = [self.templateJsonDic objectForKey:BASE_HEAD];
+        NSString *baseBottom = [self.templateJsonDic objectForKey:BASE_BOTTOM];
+        NSMutableString *htmlContent = [[NSMutableString alloc] init];
+        [htmlContent appendString:baseHead];
+        NSString *timeContent = [self formatTime:messageList.firstObject endModel:messageList.lastObject];
+        [htmlContent appendString:timeContent];
+        NSString *beforeUserId = [[NSString alloc] init];
+        for (int i = 0; i < messageList.count; i++) {
+            RCMessageModel *messageModel = [messageList objectAtIndex:i];
+            RCUserInfo *userInfo;
+            NSString *senderUserName;
+            //组装名字
+            if (forwardConversationType == ConversationType_GROUP) {
+                userInfo = [[RCUserInfoCacheManager sharedManager] getUserInfo:messageModel.senderUserId inGroupId:messageModel.targetId];
+                senderUserName = userInfo.name;
+                RCGroup *groupInfo =
+                    [[RCUserInfoCacheManager sharedManager] getGroupInfoFromCacheOnly:messageModel.targetId];
+                if (![nameList containsObject:groupInfo.groupName]) {
+                    [nameList addObject:groupInfo.groupName];
+                }
+            } else {
+                userInfo = [[RCUserInfoCacheManager sharedManager] getUserInfo:messageModel.senderUserId];
+                senderUserName = userInfo.name;
+                if (![nameList containsObject:senderUserName]) {
+                    [nameList addObject:senderUserName];
+                }
+            }
+            //组装缩略信息
+            if (i < 4) {
+                [summaryList addObject:[self packageSummaryList:messageModel senderUserName:senderUserName]];
+            }
+            //组装htmlbody
+            BOOL ifSplitPortrait;
+            if ([beforeUserId isEqualToString:userInfo.userId]) {
+                ifSplitPortrait = NO;
+            } else {
+                ifSplitPortrait = YES;
+            }
+            beforeUserId = userInfo.userId;
+            NSString *htmlBody = [self packageHTMLBody:messageModel userInfo:userInfo ifSplitPortrait:ifSplitPortrait];
+            [htmlContent appendString:htmlBody];
+        }
+
+        [htmlContent appendString:baseBottom];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (completedBlock) {
+                completedBlock(summaryList,nameList,htmlContent);
+            }
+        });
+    });
+}
 
 - (void)sendCombienMessage:(NSArray *)messageList
         selectConversation:(NSArray *)conversationList

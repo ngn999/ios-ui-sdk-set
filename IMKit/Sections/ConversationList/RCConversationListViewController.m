@@ -85,7 +85,6 @@
     }
     self.conversationListTableView.dataSource = self;
     self.conversationListTableView.delegate = self;
-    self.conversationListTableView.rcmj_footer = self.footer;
     [self.view addSubview:self.conversationListTableView];
     [self registerObserver];
 }

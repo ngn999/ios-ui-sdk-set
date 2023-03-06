@@ -65,7 +65,7 @@
                               message:RCLocalizedString(@"photoAccessRight")
                           cancelTitle:RCLocalizedString(@"OK")];
         } resultBlock:^(BOOL success) {
-            [self showAlertWithSuccess:success];
+//            [self showAlertWithSuccess:success];
         }];
 
     }

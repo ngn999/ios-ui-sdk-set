@@ -127,8 +127,6 @@ NSString *const KNotificationMessageBaseCellUpdateCanReceiptStatus =
         self.receiptStatusLabel.text = nil;
     }
 
-    [self.portraitImageView setPlaceholderImage:RCResourceImage(@"icon_people_placeholder")];
-
     if (model.messageDirection == MessageDirection_SEND && model.sentStatus == SentStatus_SENT) {
         if (model.isCanSendReadReceipt) {
             self.receiptView.hidden = NO;
@@ -144,11 +142,9 @@ NSString *const KNotificationMessageBaseCellUpdateCanReceiptStatus =
     //如果是客服，更换默认头像
     if (ConversationType_CUSTOMERSERVICE == model.conversationType) {
         if (model.messageDirection == MessageDirection_RECEIVE) {
-            [self.portraitImageView setPlaceholderImage:RCResourceImage(@"portrait_kefu")];
-
             model.userInfo = model.content.senderUserInfo;
             if (model.content.senderUserInfo != nil) {
-                [self.portraitImageView setImageURL:[NSURL URLWithString:model.content.senderUserInfo.portraitUri]];
+                [self.portraitImageView sd_setImageWithURL:[NSURL URLWithString:model.content.senderUserInfo.portraitUri] placeholderImage:RCResourceImage(@"portrait_kefu")];
                 [self.nicknameLabel setText:[RCKitUtility getDisplayName:model.content.senderUserInfo]];
             } else {
                 [self.portraitImageView setImage:RCResourceImage(@"portrait_kefu")];
@@ -158,10 +154,10 @@ NSString *const KNotificationMessageBaseCellUpdateCanReceiptStatus =
             RCUserInfo *userInfo = [[RCUserInfoCacheManager sharedManager] getUserInfo:model.senderUserId];
             model.userInfo = userInfo;
             if (userInfo) {
-                [self.portraitImageView setImageURL:[NSURL URLWithString:userInfo.portraitUri]];
+                [self.portraitImageView sd_setImageWithURL:[NSURL URLWithString:userInfo.portraitUri] placeholderImage:RCResourceImage(@"icon_people_placeholder")];
                 [self.nicknameLabel setText:[RCKitUtility getDisplayName:userInfo]];
             } else {
-                [self.portraitImageView setImageURL:nil];
+                self.portraitImageView.image = RCResourceImage(@"icon_people_placeholder");
                 [self.nicknameLabel setText:nil];
             }
         }
@@ -178,17 +174,17 @@ NSString *const KNotificationMessageBaseCellUpdateCanReceiptStatus =
             }
             model.userInfo = model.content.senderUserInfo;
             if (serviceProfile) {
-                [self.portraitImageView setImageURL:[NSURL URLWithString:serviceProfile.portraitUrl]];
+                [self.portraitImageView sd_setImageWithURL:[NSURL URLWithString:serviceProfile.portraitUrl] placeholderImage:RCResourceImage(@"icon_people_placeholder")];
                 [self.nicknameLabel setText:serviceProfile.name];
             }
         } else {
             RCUserInfo *userInfo = [[RCUserInfoCacheManager sharedManager] getUserInfo:model.senderUserId];
             model.userInfo = userInfo;
             if (userInfo) {
-                [self.portraitImageView setImageURL:[NSURL URLWithString:userInfo.portraitUri]];
+                [self.portraitImageView sd_setImageWithURL:[NSURL URLWithString:userInfo.portraitUri] placeholderImage:RCResourceImage(@"icon_people_placeholder")];
                 [self.nicknameLabel setText:[RCKitUtility getDisplayName:userInfo]];
             } else {
-                [self.portraitImageView setImageURL:nil];
+                self.portraitImageView.image = RCResourceImage(@"icon_people_placeholder");
                 [self.nicknameLabel setText:nil];
             }
         }
@@ -198,10 +194,10 @@ NSString *const KNotificationMessageBaseCellUpdateCanReceiptStatus =
         userInfo.alias = tempUserInfo.alias;
         model.userInfo = userInfo;
         if (userInfo) {
-            [self.portraitImageView setImageURL:[NSURL URLWithString:userInfo.portraitUri]];
+            [self.portraitImageView sd_setImageWithURL:[NSURL URLWithString:userInfo.portraitUri] placeholderImage:RCResourceImage(@"icon_people_placeholder")];
             [self.nicknameLabel setText:[RCKitUtility getDisplayName:userInfo]];
         } else {
-            [self.portraitImageView setImageURL:nil];
+            self.portraitImageView.image = RCResourceImage(@"icon_people_placeholder");
             [self.nicknameLabel setText:nil];
         }
     } else {
@@ -215,11 +211,11 @@ NSString *const KNotificationMessageBaseCellUpdateCanReceiptStatus =
         model.userInfo = userInfo;
         if (userInfo) {
             if (model.conversationType != ConversationType_Encrypted) {
-                [self.portraitImageView setImageURL:[NSURL URLWithString:userInfo.portraitUri]];
+                [self.portraitImageView sd_setImageWithURL:[NSURL URLWithString:userInfo.portraitUri] placeholderImage:RCResourceImage(@"icon_people_placeholder")];
             }
             [self.nicknameLabel setText:[RCKitUtility getDisplayName:userInfo]];
         } else {
-            [self.portraitImageView setImageURL:nil];
+            self.portraitImageView.image = RCResourceImage(@"icon_people_placeholder");
             [self.nicknameLabel setText:nil];
         }
     }
@@ -822,7 +818,7 @@ NSString *const KNotificationMessageBaseCellUpdateCanReceiptStatus =
     __weak typeof(self) weakSelf = self;
     dispatch_async(dispatch_get_main_queue(), ^{
         if (userInfo.portraitUri.length > 0) {
-            [weakSelf.portraitImageView setImageURL:[NSURL URLWithString:userInfo.portraitUri]];
+            [weakSelf.portraitImageView sd_setImageWithURL:[NSURL URLWithString:userInfo.portraitUri]];
         }
         [weakSelf.nicknameLabel setText:[RCKitUtility getDisplayName:userInfo]];
     });
@@ -969,7 +965,7 @@ NSString *const KNotificationMessageBaseCellUpdateCanReceiptStatus =
 
 - (RCloudImageView *)portraitImageView{
     if (!_portraitImageView) {
-        _portraitImageView = [[RCloudImageView alloc] initWithPlaceholderImage:RCResourceImage(@"")];
+        _portraitImageView = [[SDAnimatedImageView alloc] init];
         //点击头像
         UITapGestureRecognizer *portraitTap =
             [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(tapUserPortaitEvent:)];

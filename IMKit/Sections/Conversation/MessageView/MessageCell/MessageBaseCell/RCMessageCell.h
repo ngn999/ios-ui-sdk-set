@@ -11,6 +11,7 @@
 #import "RCMessageCellDelegate.h"
 #import "RCThemeDefine.h"
 #import "RCButton.h"
+#import <SDWebImage/SDWebImage.h>
 #define HeadAndContentSpacing 8
 #define PortraitViewEdgeSpace 12//头像与屏幕边缘距离
 #define NameAndContentSpace 5
@@ -29,7 +30,7 @@
 /*!
 消息发送者的用户头像
 */
-@property (nonatomic, strong) RCloudImageView *portraitImageView;
+@property (nonatomic, strong) SDAnimatedImageView *portraitImageView;
 
 /*!
  消息发送者的用户名称

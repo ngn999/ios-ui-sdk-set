@@ -233,9 +233,6 @@
 
 #pragma mark - Private Methods
 - (void)setNav {
-    UIImage *imgMirror = RCResourceImage(@"navigator_btn_back");
-    imgMirror = [RCSemanticContext imageflippedForRTL:imgMirror];
-    self.navigationItem.leftBarButtonItems = [RCKitUtility getLeftNavigationItems:imgMirror title:RCLocalizedString(@"Back") target:self action:@selector(clickBackBtn:)];
     self.navigationItem.title = self.navTitle;
 }
 

@@ -250,8 +250,8 @@
 "ChatHistoryForX" = "Chat History for %@";
 "OneByOneForwardingNotSupported" = "Failed to send, burn, audio and video message, cannot be forwarded";
 "CombineForwardingNotSupported" = "Failed to send, burn, quote message, cannot be forwarded";
-"CombineAndForward" = "Combine and Forward";
-"OneByOneForward" = "One-by-One Forward";
+"CombineAndForward" = "Forward combined";
+"OneByOneForward" = "Forward one by one";
 "ChatHistory" = "Chat History";
 "ChatHistoryTitleXAndY" = "Chat History for %@ and %@";
 "ChatHistoryTitleX" = "Chat History for %@";

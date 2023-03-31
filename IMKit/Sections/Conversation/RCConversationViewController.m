@@ -63,7 +63,7 @@
 #import "RCLocationMessage+imkit.h"
 #import "RCSemanticContext.h"
 
-#define UNREAD_MESSAGE_MAX_COUNT 99
+#define UNREAD_MESSAGE_MAX_COUNT 10
 #define COLLECTION_VIEW_REFRESH_CONTROL_HEIGHT 30
 
 extern NSString *const RCKitDispatchDownloadMediaNotification;
@@ -3288,7 +3288,7 @@ static NSString *const rcUnknownMessageCellIndentifier = @"rcUnknownMessageCellI
             [[UILabel alloc] initWithFrame:CGRectZero];
         NSString *newMessageCount = [NSString stringWithFormat:@"%ld", (long)_unReadMessage];
         if (_unReadMessage > UNREAD_MESSAGE_MAX_COUNT) {
-            newMessageCount = [NSString stringWithFormat:@"%d+", UNREAD_MESSAGE_MAX_COUNT];
+            newMessageCount = [NSString stringWithFormat:@"%ld+", MIN(_unReadMessage, 99)];
         }
         NSString *stringUnread = [NSString
             stringWithFormat:RCLocalizedString(@"Right_unReadMessage"), newMessageCount];

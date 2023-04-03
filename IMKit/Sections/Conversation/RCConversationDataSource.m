@@ -805,7 +805,7 @@ static BOOL msgRoamingServiceAvailable = YES;
         [self.chatVC.unReadButton removeFromSuperview];
         self.chatVC.unReadMessage = 0;
     }
-    if (self.chatVC.unReadMessage > self.chatVC.defaultLocalHistoryMessageCount && self.chatVC.enableUnreadMessageIcon == YES && !self.chatVC.unReadButton.selected) {
+    if (self.chatVC.unReadMessage >= 10 && self.chatVC.enableUnreadMessageIcon == YES && !self.chatVC.unReadButton.selected) {
         [self.chatVC setupUnReadMessageView];
     }
     if (self.chatVC.locatedMessageSentTime > 0) {

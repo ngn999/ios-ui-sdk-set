@@ -15,7 +15,7 @@
 #import "RCKitConfig.h"
 #import "RCMessageCellTool.h"
 #import "RCResendManager.h"
-#import <RCIMClient+Destructing.h>
+#import <RCCoreClient+Destructing.h>
 #import <RongPublicService/RongPublicService.h>
 // 头像
 #define PortraitImageViewTop 0
@@ -64,6 +64,10 @@ NSString *const KNotificationMessageBaseCellUpdateCanReceiptStatus =
     BOOL _showPortrait;
 }
 @property (nonatomic, assign) BOOL showBubbleBackgroundView;
+//当前 cell 正在展示的用户信息，消息携带用户信息且频发发送，会导致 cell 频发刷新
+//cell 复用的时候，检测如果是即将刷新的是同一个用户信息，那么就跳过刷新
+//IMSDK-2705
+@property (nonatomic, strong) RCUserInfo *currentDisplayedUserInfo;
 @end
 @implementation RCMessageCell
 
@@ -514,7 +518,6 @@ NSString *const KNotificationMessageBaseCellUpdateCanReceiptStatus =
 
 - (void)relayoutViewBy:(BOOL)show {
     CGFloat protraitWidth = RCKitConfigCenter.ui.globalMessagePortraitSize.width;
-    CGFloat protraitHeight = RCKitConfigCenter.ui.globalMessagePortraitSize.height;
     
     CGRect nicknameFrame = self.nicknameLabel.frame;
     CGRect contentFrame = self.messageContentView.frame;
@@ -652,7 +655,7 @@ NSString *const KNotificationMessageBaseCellUpdateCanReceiptStatus =
 
 - (void)messageDestructing {
     NSNumber *whisperMsgDuration =
-        [[RCIMClient sharedRCIMClient] getDestructMessageRemainDuration:self.model.messageUId];
+        [[RCCoreClient sharedCoreClient] getDestructMessageRemainDuration:self.model.messageUId];
     if (whisperMsgDuration == nil) {
         [self.destructBtn setTitle:@"" forState:UIControlStateNormal];
         [self.destructBtn setImage:RCResourceImage(@"fire_identify") forState:UIControlStateNormal];
@@ -743,13 +746,13 @@ NSString *const KNotificationMessageBaseCellUpdateCanReceiptStatus =
 }
 
 - (void)sendMessageReadReceiptRequest:(NSString *)messageUId {
-    RCMessage *message = [[RCIMClient sharedRCIMClient] getMessage:self.model.messageId];
+    RCMessage *message = [[RCCoreClient sharedCoreClient] getMessage:self.model.messageId];
     if (message) {
         if (!messageUId || [messageUId isEqualToString:@""]) {
             return;
         }
         __weak typeof(self) weakSelf = self;
-        [[RCIMClient sharedRCIMClient] sendReadReceiptRequest:message success:^{
+        [[RCCoreClient sharedCoreClient] sendReadReceiptRequest:message success:^{
             weakSelf.model.isCanSendReadReceipt = NO;
             dispatch_async(dispatch_get_main_queue(), ^{
                 weakSelf.receiptView.hidden = YES;
@@ -814,6 +817,11 @@ NSString *const KNotificationMessageBaseCellUpdateCanReceiptStatus =
 }
 
 - (void)updateUserInfoUI:(RCUserInfo *)userInfo {
+    if ([self isSameUserInfo:self.currentDisplayedUserInfo other:userInfo]) {
+        return;
+    }
+    self.currentDisplayedUserInfo = userInfo;
+    
     self.model.userInfo = userInfo;
     __weak typeof(self) weakSelf = self;
     dispatch_async(dispatch_get_main_queue(), ^{
@@ -822,6 +830,25 @@ NSString *const KNotificationMessageBaseCellUpdateCanReceiptStatus =
         }
         [weakSelf.nicknameLabel setText:[RCKitUtility getDisplayName:userInfo]];
     });
+}
+
+- (BOOL)isSameUserInfo:(RCUserInfo *)currentUserInfo other:(RCUserInfo *)other {
+    if (!currentUserInfo || !other) {
+        return NO;
+    }
+    if (currentUserInfo.userId && ![currentUserInfo.userId isEqualToString:other.userId]) {
+        return NO;
+    }
+    if (currentUserInfo.name && ![currentUserInfo.name isEqualToString:other.name]) {
+        return NO;
+    }
+    if (currentUserInfo.portraitUri && ![currentUserInfo.portraitUri isEqualToString:other.portraitUri]) {
+        return NO;
+    }
+    if (currentUserInfo.alias && ![currentUserInfo.alias isEqualToString:other.alias]) {
+        return NO;
+    }
+    return YES;
 }
 
 #pragma mark - Target Action
@@ -837,7 +864,7 @@ NSString *const KNotificationMessageBaseCellUpdateCanReceiptStatus =
 
 - (void)enableShowReceiptView:(UIButton *)sender {
     if (!self.model.messageUId) {
-        RCMessage *message = [[RCIMClient sharedRCIMClient] getMessage:self.model.messageId];
+        RCMessage *message = [[RCCoreClient sharedCoreClient] getMessage:self.model.messageId];
         if (message) {
             [self sendMessageReadReceiptRequest:message.messageUId];
         }
@@ -888,9 +915,9 @@ NSString *const KNotificationMessageBaseCellUpdateCanReceiptStatus =
 }
 
 #pragma mark - Getter && Setter
-- (UIButton *)receiptView {
+- (RCBaseButton *)receiptView {
     if (!_receiptView) {
-        _receiptView = [[UIButton alloc] init];
+        _receiptView = [[RCBaseButton alloc] init];
         [_receiptView setImage:RCResourceImage(@"message_read_status") forState:UIControlStateNormal];
         [_receiptView addTarget:self
                          action:@selector(enableShowReceiptView:)
@@ -924,9 +951,9 @@ NSString *const KNotificationMessageBaseCellUpdateCanReceiptStatus =
     return _destructView;
 }
 
-- (UIButton *)destructBtn {
+- (RCBaseButton *)destructBtn {
     if (_destructBtn == nil) {
-        _destructBtn = [[UIButton alloc] initWithFrame:CGRectZero];
+        _destructBtn = [[RCBaseButton alloc] initWithFrame:CGRectZero];
         [_destructBtn setTitleColor:RCDYCOLOR(0xffffff, 0x11111) forState:UIControlStateNormal];
         _destructBtn.titleLabel.textAlignment = NSTextAlignmentCenter;
         _destructBtn.layer.cornerRadius = 10.f;
@@ -1019,9 +1046,9 @@ NSString *const KNotificationMessageBaseCellUpdateCanReceiptStatus =
     return _messageContentView;
 }
 
-- (UIImageView *)bubbleBackgroundView{
+- (RCBaseImageView *)bubbleBackgroundView{
     if (!_bubbleBackgroundView) {
-        _bubbleBackgroundView = [[UIImageView alloc] initWithFrame:CGRectZero];
+        _bubbleBackgroundView = [[RCBaseImageView alloc] initWithFrame:CGRectZero];
         [self.messageContentView addSubview:self.bubbleBackgroundView];
     }
     return _bubbleBackgroundView;

@@ -48,13 +48,13 @@ AVCaptureVideoOrientation orientationBaseOnAcceleration(CMAcceleration accelerat
                                      RCSightPlayerControllerDelegate, RCSightPreviewViewDelegate>
 @property (nonatomic, strong) RCSightPreviewView *sightView;
 @property (nonatomic, strong) RCSightCapturer *capturer;
-@property (nonatomic, strong) UIButton *switchCameraBtn;
-@property (nonatomic, strong) UIButton *dismissBtn;
-@property (nonatomic, strong) UIImageView *stillImageView;
-@property (nonatomic, strong) UIButton *playBtn;
+@property (nonatomic, strong) RCBaseButton *switchCameraBtn;
+@property (nonatomic, strong) RCBaseButton *dismissBtn;
+@property (nonatomic, strong) RCBaseImageView *stillImageView;
+@property (nonatomic, strong) RCBaseButton *playBtn;
 @property (nonatomic, strong) RCSightActionButton *actionButton;
-@property (nonatomic, strong) UIButton *cancelBtn;
-@property (nonatomic, strong) UIButton *okBtn;
+@property (nonatomic, strong) RCBaseButton *cancelBtn;
+@property (nonatomic, strong) RCBaseButton *okBtn;
 @property (nonatomic, assign) BOOL isRecording;
 @property (nonatomic, strong) RCSightRecorder *recorder;
 @property (nonatomic, strong) RCSightPlayerController *playerController;
@@ -97,9 +97,9 @@ AVCaptureVideoOrientation orientationBaseOnAcceleration(CMAcceleration accelerat
     return _capturer;
 }
 
-- (UIImageView *)stillImageView {
+- (RCBaseImageView *)stillImageView {
     if (!_stillImageView) {
-        _stillImageView = [[UIImageView alloc] initWithFrame:CGRectZero];
+        _stillImageView = [[RCBaseImageView alloc] initWithFrame:CGRectZero];
         // TODO_yangyudong
         if ([[UIDevice currentDevice].model containsString:@"iPad"]) {
             _stillImageView.contentMode = UIViewContentModeScaleAspectFill;
@@ -111,9 +111,9 @@ AVCaptureVideoOrientation orientationBaseOnAcceleration(CMAcceleration accelerat
     return _stillImageView;
 }
 
-- (UIButton *)switchCameraBtn {
+- (RCBaseButton *)switchCameraBtn {
     if (!_switchCameraBtn) {
-        _switchCameraBtn = [[UIButton alloc] initWithFrame:CGRectMake(0, 0, CommonBtnSize, CommonBtnSize)];
+        _switchCameraBtn = [[RCBaseButton alloc] initWithFrame:CGRectMake(0, 0, CommonBtnSize, CommonBtnSize)];
         [_switchCameraBtn setImage:RCResourceImage(@"sight_camera_switch") forState:UIControlStateNormal];
         [_switchCameraBtn setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
         _switchCameraBtn.backgroundColor = [UIColor clearColor];
@@ -124,9 +124,9 @@ AVCaptureVideoOrientation orientationBaseOnAcceleration(CMAcceleration accelerat
     return _switchCameraBtn;
 }
 
-- (UIButton *)playBtn {
+- (RCBaseButton *)playBtn {
     if (!_playBtn) {
-        _playBtn = [[UIButton alloc] initWithFrame:CGRectMake(0, 0, OKBtnSize, OKBtnSize)];
+        _playBtn = [[RCBaseButton alloc] initWithFrame:CGRectMake(0, 0, OKBtnSize, OKBtnSize)];
         [_playBtn setImage:RCResourceImage(@"sight_play_btn") forState:UIControlStateNormal];
         [_playBtn setImage:RCResourceImage(@"sight_pause_btn") forState:UIControlStateSelected];
         [_playBtn addTarget:self action:@selector(playAction:) forControlEvents:UIControlEventTouchUpInside];
@@ -143,9 +143,9 @@ AVCaptureVideoOrientation orientationBaseOnAcceleration(CMAcceleration accelerat
     return _actionButton;
 }
 
-- (UIButton *)dismissBtn {
+- (RCBaseButton *)dismissBtn {
     if (!_dismissBtn) {
-        _dismissBtn = [[UIButton alloc] initWithFrame:CGRectMake(0, 0, OKBtnSize, OKBtnSize)];
+        _dismissBtn = [[RCBaseButton alloc] initWithFrame:CGRectMake(0, 0, OKBtnSize, OKBtnSize)];
         [_dismissBtn setImage:RCResourceImage(@"sight_top_toolbar_close") forState:UIControlStateNormal];
         _dismissBtn.backgroundColor = [UIColor clearColor];
         [_dismissBtn addTarget:self action:@selector(dismissAction:) forControlEvents:UIControlEventTouchUpInside];
@@ -153,9 +153,9 @@ AVCaptureVideoOrientation orientationBaseOnAcceleration(CMAcceleration accelerat
     return _dismissBtn;
 }
 
-- (UIButton *)cancelBtn {
+- (RCBaseButton *)cancelBtn {
     if (!_cancelBtn) {
-        _cancelBtn = [[UIButton alloc] initWithFrame:CGRectMake(0, 0, OKBtnSize, OKBtnSize)];
+        _cancelBtn = [[RCBaseButton alloc] initWithFrame:CGRectMake(0, 0, OKBtnSize, OKBtnSize)];
         [_cancelBtn setImage:RCResourceImage(@"sight_preview_cancel") forState:UIControlStateNormal];
         [_cancelBtn addTarget:self action:@selector(cancelAction:) forControlEvents:UIControlEventTouchUpInside];
         _cancelBtn.enabled = NO;
@@ -163,9 +163,9 @@ AVCaptureVideoOrientation orientationBaseOnAcceleration(CMAcceleration accelerat
     return _cancelBtn;
 }
 
-- (UIButton *)okBtn {
+- (RCBaseButton *)okBtn {
     if (!_okBtn) {
-        _okBtn = [[UIButton alloc] initWithFrame:CGRectMake(0, 0, OKBtnSize, OKBtnSize)];
+        _okBtn = [[RCBaseButton alloc] initWithFrame:CGRectMake(0, 0, OKBtnSize, OKBtnSize)];
         [_okBtn setImage:RCResourceImage(@"sight_preview_done") forState:UIControlStateNormal];
         [_okBtn addTarget:self action:@selector(okAction:) forControlEvents:UIControlEventTouchUpInside];
         _okBtn.enabled = NO;
@@ -509,6 +509,7 @@ AVCaptureVideoOrientation orientationBaseOnAcceleration(CMAcceleration accelerat
 #endif
         self.tipsLable.hidden = NO;
         self.beginTime = [[NSDate date] timeIntervalSince1970];
+        [self updateTimeLabel];
     }
 }
 
@@ -519,10 +520,10 @@ AVCaptureVideoOrientation orientationBaseOnAcceleration(CMAcceleration accelerat
         [self.recorder finishRecording];
 #else
         [self sightRecorder:nil didWriteMovieAtURL:nil];
-#endif
         self.endTime = [[NSDate date] timeIntervalSince1970];
         [self updateTimeLabel];
         [self hideTipsLabel];
+#endif
         [self.timer invalidate];
     }
 }
@@ -581,6 +582,11 @@ AVCaptureVideoOrientation orientationBaseOnAcceleration(CMAcceleration accelerat
 
 - (void)updateTimeLabel {
     NSTimeInterval current = [[NSDate date] timeIntervalSince1970];
+    [self updateTimeLabelWithEndTime:current];
+}
+
+- (void)updateTimeLabelWithEndTime:(NSTimeInterval)endTime {
+    NSTimeInterval current = endTime;
     long seconds = round(current - self.beginTime);
     seconds = seconds > self.actionButton.canRecordMaxDuration ? self.actionButton.canRecordMaxDuration : seconds;
     NSString *tipsText = 0 == seconds ? @"" : [NSString stringWithFormat:@"%ld\"", (long)seconds];
@@ -650,7 +656,7 @@ AVCaptureVideoOrientation orientationBaseOnAcceleration(CMAcceleration accelerat
             self.stillImageView.hidden = YES;
             self.playBtn.selected = NO;
 #if !(TARGET_OS_SIMULATOR)
-            [self.playerController reset];
+            [self.playerController resetSightPlayer];
             [self.capturer resetAudioSession];
             [self.capturer resetSessionInput];
 #endif
@@ -669,7 +675,7 @@ AVCaptureVideoOrientation orientationBaseOnAcceleration(CMAcceleration accelerat
         }
     } else {
         [self.capturer stopRunning];
-        [self.playerController reset];
+        [self.playerController resetSightPlayer];
         [self.playerController.view removeFromSuperview];
         if ([self.delegate respondsToSelector:@selector(sightViewController:didWriteSightAtURL:thumbnail:duration:)]) {
 
@@ -709,6 +715,16 @@ AVCaptureVideoOrientation orientationBaseOnAcceleration(CMAcceleration accelerat
 
 #pragma mark - RCSightRecorderDelegate
 - (void)sightRecorder:(RCSightRecorder *)recorder didWriteMovieAtURL:(NSURL *)outputURL {
+    NSDictionary *dic = @{AVURLAssetPreferPreciseDurationAndTimingKey:@(YES)};
+    AVURLAsset *audioAsset = [AVURLAsset URLAssetWithURL:outputURL options:dic];
+    CMTime audioDuration = audioAsset.duration;
+    Float64 audioDurationSeconds = CMTimeGetSeconds(audioDuration);
+    
+    //录制成功，需要读取一下视频文件的总时长，保证精准
+    self.endTime = self.beginTime + audioDurationSeconds;
+    [self updateTimeLabelWithEndTime:self.endTime];
+    [self hideTipsLabel];
+
     long duration = round(self.endTime - self.beginTime);
     if (0 == duration) {
         self.playBtn.hidden = YES;
@@ -732,6 +748,9 @@ AVCaptureVideoOrientation orientationBaseOnAcceleration(CMAcceleration accelerat
      didFailWithError:(NSError *)error
                status:(NSInteger)status {
     self.endTime = [[NSDate date] timeIntervalSince1970];
+    [self updateTimeLabel];
+    [self hideTipsLabel];
+
     long duration = round(self.endTime - self.beginTime);
     if (0 == duration) {
         self.playBtn.hidden = YES;

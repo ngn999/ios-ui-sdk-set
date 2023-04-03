@@ -20,7 +20,10 @@
 @interface RCConversationCell ()
 
 @property (nonatomic, strong) RCConversationHeaderView *headerView;
-
+//当前 cell 正在展示的用户信息，消息携带用户信息且频发发送，会导致 cell 频发刷新
+//cell 复用的时候，检测如果是即将刷新的是同一个用户信息，那么就跳过刷新
+//IMSDK-2705
+@property (nonatomic, strong) RCUserInfo *currentDisplayedUserInfo;
 @end
 
 @implementation RCConversationCell
@@ -391,6 +394,11 @@
 - (void)onUserInfoUpdate:(NSNotification *)notification {
     NSDictionary *userInfoDic = notification.object;
     RCUserInfo *updateUserInfo = userInfoDic[@"userInfo"];
+    if ([self isSameUserInfo:self.currentDisplayedUserInfo other:updateUserInfo]) {
+        return;
+    }
+    self.currentDisplayedUserInfo = updateUserInfo;
+    
     NSString *updateUserId = userInfoDic[@"userId"];
     NSString *displayName = [RCKitUtility getDisplayName:updateUserInfo];
 
@@ -582,6 +590,25 @@
         _statusView = [[RCConversationStatusView alloc] init];
     }
     return _statusView;
+}
+#pragma mark - private method
+- (BOOL)isSameUserInfo:(RCUserInfo *)currentUserInfo other:(RCUserInfo *)other {
+    if (!currentUserInfo || !other) {
+        return NO;
+    }
+    if (currentUserInfo.userId && ![currentUserInfo.userId isEqualToString:other.userId]) {
+        return NO;
+    }
+    if (currentUserInfo.name && ![currentUserInfo.name isEqualToString:other.name]) {
+        return NO;
+    }
+    if (currentUserInfo.portraitUri && ![currentUserInfo.portraitUri isEqualToString:other.portraitUri]) {
+        return NO;
+    }
+    if (currentUserInfo.alias && ![currentUserInfo.alias isEqualToString:other.alias]) {
+        return NO;
+    }
+    return YES;
 }
 #pragma mark - 向后兼容
 - (void)setHeaderImageViewBackgroundView:(UIView *)headerImageViewBackgroundView {

@@ -9,20 +9,21 @@
 #import "RCSightFileBrowserViewController.h"
 #import "RCIM.h"
 #import "RCKitUtility.h"
-#import "RCMessageModel.h"
 #import "RCSightSlideViewController.h"
 #import "RCKitCommonDefine.h"
 #import "RCSemanticContext.h"
+#import "RCBaseTableViewCell.h"
+#import "RCBaseNavigationController.h"
 @interface RCSightFileBrowserViewController ()
 
-@property (nonatomic, strong) RCMessageModel *messageModel;
-@property (nonatomic, strong) NSMutableArray<RCMessageModel *> *messageModelArray;
+@property (nonatomic, strong) RCMessage *messageModel;
+@property (nonatomic, strong) NSMutableArray<RCMessage *> *messageModelArray;
 
 @end
 
 @implementation RCSightFileBrowserViewController
 #pragma mark - Life Cycle
-- (instancetype)initWithMessageModel:(RCMessageModel *)model {
+- (instancetype)initWithMessageModel:(RCMessage *)model {
     if (self = [super initWithStyle:UITableViewStyleGrouped]) {
         self.messageModel = model;
     }
@@ -77,9 +78,9 @@
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
     NSString *const identifier = @"RCSightFileCell";
-    UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:identifier];
+    RCBaseTableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:identifier];
     if (!cell) {
-        cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:identifier];
+        cell = [[RCBaseTableViewCell alloc] initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:identifier];
     }
     cell.textLabel.textColor = [RCKitUtility generateDynamicColor:HEXCOLOR(0x000000) darkColor:[HEXCOLOR(0xffffff) colorWithAlphaComponent:0.9]];
     cell.detailTextLabel.textColor = [RCKitUtility generateDynamicColor:[UIColor lightGrayColor] darkColor:HEXCOLOR(0xa0a5ab)];
@@ -93,7 +94,7 @@
 - (void)tableView:(UITableView *)tableView
   willDisplayCell:(UITableViewCell *)cell
 forRowAtIndexPath:(NSIndexPath *)indexPath {
-    RCMessageModel *model = self.messageModelArray[indexPath.row];
+    RCMessage *model = self.messageModelArray[indexPath.row];
     RCSightMessage *sightMessage = (RCSightMessage *)model.content;
     UIImage *image = RCResourceImage(@"sight_file_icon");
     cell.imageView.image = image;
@@ -122,11 +123,11 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
 }
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
-    RCMessageModel *model = self.messageModelArray[indexPath.row];
+    RCMessage *model = self.messageModelArray[indexPath.row];
     RCSightSlideViewController *ssv = [[RCSightSlideViewController alloc] init];
-    ssv.messageModel = model;
+    ssv.messageModel = [RCMessageModel modelWithMessage:model];
     ssv.topRightBtnHidden = YES;
-    UINavigationController *navc = [[UINavigationController alloc] initWithRootViewController:ssv];
+    RCBaseNavigationController *navc = [[RCBaseNavigationController alloc] initWithRootViewController:ssv];
     
     if ([RCSemanticContext isRTL]) {
         navc.view.semanticContentAttribute = UISemanticContentAttributeForceRightToLeft;
@@ -139,7 +140,7 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
 - (void)scrollViewDidEndDragging:(UIScrollView *)scrollView willDecelerate:(BOOL)decelerate {
     CGFloat totalHeight = scrollView.contentOffset.y + scrollView.frame.size.height;
     if (totalHeight - scrollView.contentSize.height > 0) {
-        NSArray<RCMessageModel *> *array =
+        NSArray<RCMessage *> *array =
             [self getOlderMessagesThanModel:self.messageModelArray.lastObject count:5 times:0];
         if (array.count > 0) {
             NSMutableArray *indexPathes = [[NSMutableArray alloc] init];
@@ -160,7 +161,7 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
 
 - (void)refreshAction:(UIRefreshControl *)refreshControl {
     [refreshControl endRefreshing];
-    NSArray<RCMessageModel *> *array =
+    NSArray<RCMessage *> *array =
         [self getLaterMessagesThanModel:self.messageModelArray.firstObject count:5 times:0];
     if (array.count > 0) {
         NSMutableArray *indexPathes = [[NSMutableArray alloc] init];
@@ -176,11 +177,11 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
 
 #pragma mark - Private Methods
 
-- (NSArray<RCMessageModel *> *)getLaterMessagesThanModel:(RCMessageModel *)model
+- (NSArray<RCMessage *> *)getLaterMessagesThanModel:(RCMessage *)model
                                                    count:(NSInteger)count
                                                    times:(int)times {
-    NSArray<RCMessageModel *> *imageArrayBackward =
-        [[RCIMClient sharedRCIMClient] getHistoryMessages:model.conversationType
+    NSArray<RCMessage *> *imageArrayBackward =
+        [[RCCoreClient sharedCoreClient] getHistoryMessages:model.conversationType
                                                  targetId:model.targetId
                                                objectName:[RCSightMessage getObjectName]
                                             baseMessageId:model.messageId
@@ -193,11 +194,11 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
     return messages;
 }
 
-- (NSArray<RCMessageModel *> *)getOlderMessagesThanModel:(RCMessageModel *)model
+- (NSArray<RCMessage *> *)getOlderMessagesThanModel:(RCMessage *)model
                                                    count:(NSInteger)count
                                                    times:(int)times {
-    NSArray<RCMessageModel *> *imageArrayForward =
-        [[RCIMClient sharedRCIMClient] getHistoryMessages:model.conversationType
+    NSArray<RCMessage *> *imageArrayForward =
+        [[RCCoreClient sharedCoreClient] getHistoryMessages:model.conversationType
                                                  targetId:model.targetId
                                                objectName:[RCSightMessage getObjectName]
                                             baseMessageId:model.messageId
@@ -213,7 +214,7 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
 //过滤阅后即焚视频消息
 - (NSArray *)filterDestructSightMessage:(NSArray *)array {
     NSMutableArray *backwardMessages = [NSMutableArray array];
-    for (RCMessageModel *model in array) {
+    for (RCMessage *model in array) {
         if (!(model.content.destructDuration > 0)) {
             [backwardMessages addObject:model];
         }
@@ -221,16 +222,16 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
     return backwardMessages.copy;
 }
 
-- (void)getMessageFromModel:(RCMessageModel *)model {
+- (void)getMessageFromModel:(RCMessage *)model {
     if (!model) {
         NSLog(@"Parameters are not allowed to be nil");
         return;
     }
-    NSArray<RCMessageModel *> *frontMessagesArray = [self getLaterMessagesThanModel:model count:10 times:0];
+    NSArray<RCMessage *> *frontMessagesArray = [self getLaterMessagesThanModel:model count:10 times:0];
     NSMutableArray *modelsArray = [[NSMutableArray alloc] init];
     [modelsArray addObjectsFromArray:frontMessagesArray];
     [modelsArray addObject:model];
-    NSArray<RCMessageModel *> *backMessageArray = [self getOlderMessagesThanModel:model count:10 times:0];
+    NSArray<RCMessage *> *backMessageArray = [self getOlderMessagesThanModel:model count:10 times:0];
     [modelsArray addObjectsFromArray:backMessageArray];
     self.messageModelArray = modelsArray;
 }

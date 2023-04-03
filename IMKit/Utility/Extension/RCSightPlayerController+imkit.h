@@ -8,14 +8,14 @@
 
 #ifndef RCSightPlayerController_imkit_h
 #define RCSightPlayerController_imkit_h
-@interface RCSightPlayerController : UIViewController
+@interface RCSightPlayerController : RCBaseViewController
 @property (nonatomic, weak, nullable) id delegate;
 @property (strong, nonatomic) NSURL * _Nullable rcSightURL;
 @property (strong, nonatomic, nullable) UIImage *firstFrameImage;
 @property (nonatomic, assign, getter=isAutoPlay) BOOL autoPlay;
 - (void)setFirstFrameThumbnail:(nullable UIImage *)image;
 - (void)play;
-- (void)reset:(BOOL)inactivateAudioSession;
+- (void)resetSightPlayer:(BOOL)inactivateAudioSession;
 @end
 
 #endif /* RCSightPlayerController_imkit_h */

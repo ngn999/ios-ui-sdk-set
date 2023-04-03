@@ -152,7 +152,12 @@
         }
         __weak typeof(self) weakSelf = self;
         dispatch_main_async_safe(^{
-            weakSelf.nameLabel.text = [name stringByAppendingString:@":"];
+            if([RCKitUtility isRTL]) {
+                weakSelf.nameLabel.text = [@":" stringByAppendingString:name];
+            } else {
+                weakSelf.nameLabel.text = [name stringByAppendingString:@":"];
+            }
+            
         });
     }
 }
@@ -262,9 +267,9 @@
     return _textLabel;
 }
 
-- (UIImageView *)msgImageView {
+- (RCBaseImageView *)msgImageView {
     if (!_msgImageView) {
-        _msgImageView = [[UIImageView alloc] init];
+        _msgImageView = [[RCBaseImageView alloc] init];
         _msgImageView.layer.masksToBounds = YES;
         _msgImageView.layer.cornerRadius = 3;
     }

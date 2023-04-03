@@ -17,7 +17,7 @@
 
 @property (nonatomic, strong) NSString *packageId;
 
-@property (nonatomic, strong) UIImageView *thumbImageView;
+@property (nonatomic, strong) RCBaseImageView *thumbImageView;
 
 @property (nonatomic, strong) UILabel *digestLabel;
 
@@ -62,11 +62,14 @@
     weakSelf.digestLabel.text = model.digest;
 }
 
-- (UIImageView *)thumbImageView {
+- (RCBaseImageView *)thumbImageView {
     if (_thumbImageView == nil) {
-        _thumbImageView = [[UIImageView alloc] init];
+        _thumbImageView = [[RCBaseImageView alloc] init];
         _thumbImageView.backgroundColor = [UIColor clearColor];
         _thumbImageView.contentMode = UIViewContentModeScaleAspectFit;
+        if ([RCKitUtility isRTL]) {
+            [_thumbImageView setTransform:CGAffineTransformMakeScale(-1, 1)];
+        }
     }
     return _thumbImageView;
 }
@@ -77,6 +80,9 @@
         _digestLabel.textColor = HEXCOLOR(0x999999);
         _digestLabel.font = [UIFont systemFontOfSize:13];
         _digestLabel.textAlignment = NSTextAlignmentCenter;
+        if ([RCKitUtility isRTL]) {
+            [_digestLabel setTransform:CGAffineTransformMakeScale(-1, 1)];
+        }
     }
     return _digestLabel;
 }

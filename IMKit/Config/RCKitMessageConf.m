@@ -7,7 +7,7 @@
 //
 
 #import "RCKitMessageConf.h"
-#import <RongIMLib/RongIMLib.h>
+#import <RongIMLibCore/RongIMLibCore.h>
 
 @implementation RCKitMessageConf
 - (instancetype)init
@@ -16,7 +16,10 @@
     if (self) {
         self.disableMessageNotificaiton = NO;
         self.disableMessageAlertSound = [[NSUserDefaults standardUserDefaults] boolForKey:@"rcMessageBeep"];
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
         self.maxVoiceDuration = 60;
+#pragma clang diagnostic pop
         self.enableMessageRecall = YES;
         self.enableMessageMentioned = YES;
         self.maxRecallDuration = 120;

@@ -12,6 +12,8 @@
 #import "RCThemeDefine.h"
 #import "RCButton.h"
 #import <SDWebImage/SDWebImage.h>
+#import "RCBaseButton.h"
+#import "RCBaseImageView.h"
 #define HeadAndContentSpacing 8
 #define PortraitViewEdgeSpace 12//头像与屏幕边缘距离
 #define NameAndContentSpace 5
@@ -45,7 +47,7 @@
 /*!
  消息的背景View
  */
-@property (nonatomic, strong) UIImageView *bubbleBackgroundView;
+@property (nonatomic, strong) RCBaseImageView *bubbleBackgroundView;
 
 /*!
  显示发送状态的View
@@ -74,7 +76,7 @@
 
  @discussion 仅在群组和讨论组中显示
  */
-@property (nonatomic, strong) UIButton *receiptView;
+@property (nonatomic, strong) RCBaseButton *receiptView;
 
 /*!
  消息阅读状态的 Label

@@ -89,15 +89,19 @@
 
 - (void)initAllUserModel {
     if (self.callSession.callStatus == RCCallIncoming || self.callSession.callStatus == RCCallRinging) {
-        self.mainModel = [self generateUserModel:currentUserId];
+        self.mainModel = [self generateUserModel:self.callSession.inviter];
         [self.callSession setVideoView:self.backgroundView userId:currentUserId];
-
+        
         self.subUserModelList = [[NSMutableArray alloc] init];
         for (RCCallUserProfile *userProfile in self.callSession.userProfileList) {
-            if (userProfile.userType != 2) {
+            if (![userProfile.userId isEqualToString:self.callSession.inviter] && userProfile.userType != 2) {
                 RCCallUserCallInfoModel *userModel = [self generateUserModel:userProfile.userId];
                 [self.subUserModelList addObject:userModel];
             }
+        }
+        RCCallUserCallInfoModel *userModel = [self generateUserModel:currentUserId];
+        if (userModel.profile.userType != 2) {
+            [self.subUserModelList addObject:userModel];
         }
     } else if (self.callSession.callStatus == RCCallDialing) {
         self.mainModel = [self generateUserModel:currentUserId];
@@ -434,7 +438,11 @@
 
 - (void)resetLayout:(BOOL)isMultiCall mediaType:(RCCallMediaType)mediaType callStatus:(RCCallStatus)sessionCallStatus {
     [super resetLayout:isMultiCall mediaType:mediaType callStatus:sessionCallStatus];
-
+    // 解决多人通话阿语模式下 UI 动画问题
+    NSString *currentLanguageCode = [[NSLocale preferredLanguages] objectAtIndex:0];
+    if ([currentLanguageCode isEqualToString:@"ar"]) {
+        [UICollectionView setAnimationsEnabled:NO];
+    }
     RCCallStatus callStatus = sessionCallStatus;
     if ((callStatus == RCCallIncoming || callStatus == RCCallRinging) &&
         [RCCXCall sharedInstance].acceptedFromCallKit) {
@@ -531,7 +539,6 @@
         self.userCollectionView.hidden = NO;
     } else if (callStatus == RCCallDialing || (callStatus == RCCallActive && !self.isFullScreen)) {
         CGFloat width = (UIScreen.mainScreen.bounds.size.width - 40.0 - 20.0) / 4.5;
-
         self.userCollectionView.frame =
             CGRectMake(0,
                        self.view.frame.size.height - (RCCallButtonBottomMargin * 2 - 2.5 + RCCallButtonLength) -
@@ -582,6 +589,12 @@
  通话已接通
  */
 - (void)callDidConnect {
+    if (![self.mainModel.userId isEqualToString:currentUserId] && [self getModelInSubUserModelList:currentUserId] != nil){
+        [self removeSubUserModel:[self getModelInSubUserModelList:currentUserId]];
+        [self addSubUserModel:[self generateUserModel:self.callSession.inviter]];
+        self.mainModel = [self generateUserModel:currentUserId];
+        _mainNameLabel.text = self.mainModel.userInfo.name;
+    }
     [self.userCollectionView removeFromSuperview];
     _userCollectionView = nil;
     [self userCollectionView];

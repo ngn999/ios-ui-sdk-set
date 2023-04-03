@@ -31,7 +31,7 @@
     if (self) {
         _currentIndex = 0;
         CGRect contentViewFrame = CGRectMake(0, 0, frame.size.width, frame.size.height);
-        self.contentView = [[UICollectionView alloc] initWithFrame:contentViewFrame collectionViewLayout:self.layout];
+        self.contentView = [[RCBaseCollectionView alloc] initWithFrame:contentViewFrame collectionViewLayout:self.layout];
         self.contentView.dataSource = self;
         self.contentView.delegate = self;
         self.contentView.pagingEnabled = YES;
@@ -65,15 +65,24 @@
         dispatch_async(dispatch_get_main_queue(), ^{
             self.contentView.frame = self.bounds;
             [_contentView reloadData];
-            if (_currentIndex == 1 || [RCKitUtility isRTL]) {
-                [_contentView scrollToItemAtIndexPath:[NSIndexPath indexPathForItem:0 inSection:_currentIndex]
-                                     atScrollPosition:[RCKitUtility isRTL] ? UICollectionViewScrollPositionRight : UICollectionViewScrollPositionLeft
-                                             animated:[RCKitUtility isRTL] ? NO : YES];
-                _pageCtrl.currentPage = _currentIndex;
-            }
+            [self scrollToCurrentIndexIfNeeded];
         });
     }
     _lastWidth = self.bounds.size.width;
+}
+
+- (void)scrollToCurrentIndexIfNeeded {
+    if (_currentIndex >= _allItems.count) {
+        return;
+    }
+    BOOL needScroll = _currentIndex == 1 || [RCKitUtility isRTL];
+    if (!needScroll) {
+        return;
+    }
+    [_contentView scrollToItemAtIndexPath:[NSIndexPath indexPathForItem:0 inSection:_currentIndex]
+                         atScrollPosition:[RCKitUtility isRTL] ? UICollectionViewScrollPositionRight : UICollectionViewScrollPositionLeft
+                                 animated:[RCKitUtility isRTL] ? NO : YES];
+    _pageCtrl.currentPage = _currentIndex;
 }
 
 #pragma mark - Public Methods

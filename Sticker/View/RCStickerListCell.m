@@ -16,11 +16,11 @@
 
 @property (nonatomic, strong) RCStickerPackage *package;
 
-@property (nonatomic, strong) UIImageView *headImage;
+@property (nonatomic, strong) RCBaseImageView *headImage;
 
 @property (nonatomic, strong) UILabel *nameLabel;
 
-@property (nonatomic, strong) UIButton *deleteBtn;
+@property (nonatomic, strong) RCBaseButton *deleteBtn;
 
 @end
 
@@ -35,9 +35,16 @@
         [self.contentView addSubview:self.nameLabel];
         [self.contentView addSubview:self.deleteBtn];
 
-        self.headImage.frame = CGRectMake(15, 5, 40, 40);
-        self.nameLabel.frame = CGRectMake(CGRectGetMaxX(self.headImage.frame) + 15, 12.5, 200, 25);
-        self.deleteBtn.frame = CGRectMake(ScreenWidth - 57.5 - 15, 11.5, 57.5, 27);
+        if([RCKitUtility isRTL]) {
+            self.headImage.frame = CGRectMake(ScreenWidth - 40 - 15, 5, 40, 40);
+            self.nameLabel.frame = CGRectMake(CGRectGetMinX(self.headImage.frame) - 200 - 15, 12.5, 200, 25);
+            self.deleteBtn.frame = CGRectMake(15, 11.5, 57.5, 27);
+        } else {
+            self.headImage.frame = CGRectMake(15, 5, 40, 40);
+            self.nameLabel.frame = CGRectMake(CGRectGetMaxX(self.headImage.frame) + 15, 12.5, 200, 25);
+            self.deleteBtn.frame = CGRectMake(ScreenWidth - 57.5 - 15, 11.5, 57.5, 27);
+        }
+    
     }
     return self;
 }
@@ -66,9 +73,9 @@
     }
 }
 
-- (UIImageView *)headImage {
+- (RCBaseImageView *)headImage {
     if (_headImage == nil) {
-        _headImage = [[UIImageView alloc] init];
+        _headImage = [[RCBaseImageView alloc] init];
         _headImage.contentMode = UIViewContentModeScaleAspectFill;
     }
     return _headImage;
@@ -79,14 +86,18 @@
         _nameLabel = [[UILabel alloc] init];
         _nameLabel.font = [UIFont systemFontOfSize:18];
         _nameLabel.textColor = RCDYCOLOR(0x000000, 0x9f9f9f);
-        _nameLabel.textAlignment = NSTextAlignmentLeft;
+        if([RCKitUtility isRTL]) {
+            _nameLabel.textAlignment = NSTextAlignmentRight;
+        } else {
+            _nameLabel.textAlignment = NSTextAlignmentLeft;
+        }
     }
     return _nameLabel;
 }
 
-- (UIButton *)deleteBtn {
+- (RCBaseButton *)deleteBtn {
     if (_deleteBtn == nil) {
-        _deleteBtn = [[UIButton alloc] init];
+        _deleteBtn = [[RCBaseButton alloc] init];
         _deleteBtn.layer.borderWidth = 0.5f;
         _deleteBtn.layer.borderColor =
             [RCKitUtility generateDynamicColor:HEXCOLOR(0xCECECE)

@@ -37,14 +37,6 @@
     return _imageSize;
 }
 
-- (ALAssetOrientation)imageOrientation {
-    if (_imageOrientation) {
-        return _imageOrientation;
-    }
-    _imageOrientation = [[self.asset valueForProperty:@"ALAssetPropertyOrientation"] integerValue];
-    return _imageOrientation;
-}
-
 - (void)setValue:(id)value forKey:(NSString *)key {
 }
 
@@ -69,7 +61,8 @@
                                      weakSelf.avAsset = avAsset;
                                  }
                              }
-                    progressHandler:nil];
+                progressHandler:^(double progress, NSError * _Nonnull error, BOOL * _Nonnull stop, NSDictionary * _Nonnull info) {
+        }];
     } else {
         return [[RCAssetHelper shareAssetHelper]
             getOriginImageDataWithAsset:self
@@ -87,7 +80,9 @@
                                          }
                                      });
                                  }
-                        progressHandler:nil];
+                progressHandler:^(double progress, NSError * _Nonnull error, BOOL * _Nonnull stop, NSDictionary * _Nonnull info) {
+            
+        }];
     }
 }
 

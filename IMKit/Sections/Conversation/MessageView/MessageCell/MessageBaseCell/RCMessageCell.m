@@ -217,7 +217,7 @@ NSString *const KNotificationMessageBaseCellUpdateCanReceiptStatus =
         model.userInfo = userInfo;
         if (userInfo) {
             if (model.conversationType != ConversationType_Encrypted) {
-                [self.portraitImageView sd_setImageWithURL:[NSURL URLWithString:userInfo.portraitUri] placeholderImage:RCResourceImage(@"icon_people_placeholder")];
+                [self.portraitImageView sd_setImageWithURL:[NSURL URLWithString:userInfo.portraitUri] placeholderImage:RCResourceImage(@"icon_people_placeholder") options:SDWebImageHighPriority];
             }
             [self.nicknameLabel setText:[RCKitUtility getDisplayName:userInfo]];
         } else {

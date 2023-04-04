@@ -93,7 +93,7 @@
     [super viewWillAppear:animated];
 
     [self updateNetworkIndicatorView];
-    [self refreshConversationTableViewIfNeeded];
+    // [self refreshConversationTableViewIfNeeded];
     self.dataSource.isConverstaionListAppear = YES;
 }
 

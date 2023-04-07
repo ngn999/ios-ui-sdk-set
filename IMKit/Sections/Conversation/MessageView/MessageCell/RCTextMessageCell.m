@@ -276,8 +276,8 @@
         messagecontentview_height += 25;
     }
     if (messagecontentview_height < RCKitConfigCenter.ui.globalMessagePortraitSize.height) {
-//        messagecontentview_height = RCKitConfigCenter.ui.globalMessagePortraitSize.height;
-        messagecontentview_height = 36;
+        messagecontentview_height = RCKitConfigCenter.ui.globalMessagePortraitSize.height;
+//        messagecontentview_height = 36;
     }
     return messagecontentview_height;
 }

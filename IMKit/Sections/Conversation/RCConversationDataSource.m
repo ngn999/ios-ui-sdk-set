@@ -748,7 +748,7 @@ static BOOL msgRoamingServiceAvailable = YES;
 - (void)getHistoryMessageV2:(long long)time order:(RCHistoryMessageOrder)order loadType:(RCConversationLoadMessageType)loadType complete:(void (^)(NSArray *messages, RCConversationLoadMessageType type))complete{
     RCHistoryMessageOption *option = [[RCHistoryMessageOption alloc] init];
     option.recordTime = time;
-    option.count = self.chatVC.defaultLocalHistoryMessageCount;
+    option.count = self.chatVC.defaultRemoteHistoryMessageCount;
     option.order = order;
     __weak typeof(self) weakSelf = self;
     void (^completeHandle)(NSArray *messages, RCErrorCode code) = ^(NSArray *messages, RCErrorCode code) {

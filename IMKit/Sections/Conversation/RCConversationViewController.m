@@ -3102,8 +3102,8 @@ static NSString *const rcUnknownMessageCellIndentifier = @"rcUnknownMessageCellI
 }
 
 - (void)setDefaultRemoteHistoryMessageCount:(int)defaultRemoteHistoryMessageCount {
-    if (defaultRemoteHistoryMessageCount > 20) {
-        defaultRemoteHistoryMessageCount = 20;
+    if (defaultRemoteHistoryMessageCount > 100) {
+        defaultRemoteHistoryMessageCount = 100;
     }else if(defaultRemoteHistoryMessageCount < 0){
         defaultRemoteHistoryMessageCount = 10;
     }

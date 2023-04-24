@@ -197,6 +197,11 @@
 }
 
 - (BOOL)tableView:(UITableView *)tableView canEditRowAtIndexPath:(NSIndexPath *)indexPath {
+    
+    RCConversationModel *model = self.dataSource.dataList[indexPath.row];
+    if (model.conversationType == ConversationType_PRIVATE && [model.targetId isEqualToString:@"10001"]) {
+        return NO;
+    }
     return YES;
 }
 

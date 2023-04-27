@@ -341,7 +341,7 @@ NSString *const KNotificationMessageBaseCellUpdateCanReceiptStatus =
 }
 
 - (void)registerSizeUpdateLayoutIfNeed{
-    __weak typeof(self) weakSelf = self;
+    @weakify(self);
     [self.messageContentView registerSizeChangedEvent:^(CGSize size) {
         @strongify(self)
 
@@ -729,11 +729,11 @@ NSString *const KNotificationMessageBaseCellUpdateCanReceiptStatus =
         model.userInfo = userInfo;
         if (userInfo) {
             if (model.conversationType != ConversationType_Encrypted) {
-                [self.portraitImageView setImageURL:[NSURL URLWithString:userInfo.portraitUri]];
+                [self.portraitImageView sd_setImageWithURL:[NSURL URLWithString:userInfo.portraitUri] placeholderImage:RCResourceImage(@"icon_people_placeholder") options:SDWebImageHighPriority];
             }
             [self.nicknameLabel setText:[RCKitUtility getDisplayName:userInfo]];
         } else {
-            [self.portraitImageView setImageURL:nil];
+            self.portraitImageView.image = RCResourceImage(@"icon_people_placeholder");
             [self.nicknameLabel setText:nil];
         }
     }
@@ -741,11 +741,11 @@ NSString *const KNotificationMessageBaseCellUpdateCanReceiptStatus =
 
 - (void)p_setCustomerServiceInfo:(RCMessageModel *)model{
     if (model.messageDirection == MessageDirection_RECEIVE) {
-        [self.portraitImageView setPlaceholderImage:RCResourceImage(@"portrait_kefu")];
+        self.portraitImageView.image = RCResourceImage(@"portrait_kefu");
 
         model.userInfo = model.content.senderUserInfo;
         if (model.content.senderUserInfo != nil) {
-            [self.portraitImageView setImageURL:[NSURL URLWithString:model.content.senderUserInfo.portraitUri]];
+            [self.portraitImageView sd_setImageWithURL:[NSURL URLWithString:model.content.senderUserInfo.portraitUri]];
             [self.nicknameLabel setText:[RCKitUtility getDisplayName:model.content.senderUserInfo]];
         } else {
             [self.portraitImageView setImage:RCResourceImage(@"portrait_kefu")];
@@ -754,12 +754,12 @@ NSString *const KNotificationMessageBaseCellUpdateCanReceiptStatus =
     } else {
         RCUserInfo *userInfo = [[RCUserInfoCacheManager sharedManager] getUserInfo:model.senderUserId];
         model.userInfo = userInfo;
-        [self.portraitImageView setPlaceholderImage:RCResourceImage(@"default_portrait_msg")];
+        [self.portraitImageView setImage:RCResourceImage(@"default_portrait_msg")];
         if (userInfo) {
-            [self.portraitImageView setImageURL:[NSURL URLWithString:userInfo.portraitUri]];
+            [self.portraitImageView sd_setImageWithURL:[NSURL URLWithString:userInfo.portraitUri]];
             [self.nicknameLabel setText:[RCKitUtility getDisplayName:userInfo]];
         } else {
-            [self.portraitImageView setImageURL:nil];
+            self.portraitImageView.image = RCResourceImage(@"portrait_kefu");
             [self.nicknameLabel setText:nil];
         }
     }
@@ -777,17 +777,17 @@ NSString *const KNotificationMessageBaseCellUpdateCanReceiptStatus =
         }
         model.userInfo = model.content.senderUserInfo;
         if (serviceProfile) {
-            [self.portraitImageView setImageURL:[NSURL URLWithString:serviceProfile.portraitUrl]];
+            [self.portraitImageView sd_setImageWithURL:[NSURL URLWithString:serviceProfile.portraitUrl]];
             [self.nicknameLabel setText:serviceProfile.name];
         }
     } else {
         RCUserInfo *userInfo = [[RCUserInfoCacheManager sharedManager] getUserInfo:model.senderUserId];
         model.userInfo = userInfo;
         if (userInfo) {
-            [self.portraitImageView setImageURL:[NSURL URLWithString:userInfo.portraitUri]];
+            [self.portraitImageView sd_setImageWithURL:[NSURL URLWithString:userInfo.portraitUri]];
             [self.nicknameLabel setText:[RCKitUtility getDisplayName:userInfo]];
         } else {
-            [self.portraitImageView setImageURL:nil];
+            self.portraitImageView.image = RCResourceImage(@"icon_people_placeholder");
             [self.nicknameLabel setText:nil];
         }
     }
@@ -799,10 +799,10 @@ NSString *const KNotificationMessageBaseCellUpdateCanReceiptStatus =
     userInfo.alias = tempUserInfo.alias;
     model.userInfo = userInfo;
     if (userInfo) {
-        [self.portraitImageView setImageURL:[NSURL URLWithString:userInfo.portraitUri]];
+        [self.portraitImageView sd_setImageWithURL:[NSURL URLWithString:userInfo.portraitUri] placeholderImage:RCResourceImage(@"icon_people_placeholder") options:SDWebImageHighPriority];
         [self.nicknameLabel setText:[RCKitUtility getDisplayName:userInfo]];
     } else {
-        [self.portraitImageView setImageURL:nil];
+        self.portraitImageView.image = RCResourceImage(@"icon_people_placeholder");
         [self.nicknameLabel setText:nil];
     }
 }

@@ -360,7 +360,7 @@ NSString *const KNotificationMessageBaseCellUpdateCanReceiptStatus =
                         rect.origin.y = PortraitImageViewTop + NameHeight + NameAndContentSpace;
                     }
                 } else {
-                    if (strongSelf.showPortrait) {
+                    if (self.showPortrait) {
                         rect.origin.x = PortraitViewEdgeSpace + protraitWidth + HeadAndContentSpacing;
                     } else {
                         rect.origin.x = PortraitViewEdgeSpace;

@@ -41,17 +41,15 @@
 
 #pragma mark - Public Methods
 - (void)configPreviewCellWithItem:(RCAssetModel *)model {
-    __weak typeof(self) weakSelf = self;
     [[RCAssetHelper shareAssetHelper] getPreviewWithAsset:model.asset
                                                    result:^(UIImage *photo, NSDictionary *info) {
                                                        dispatch_async(dispatch_get_main_queue(), ^{
-                                                           weakSelf.thumbnailView.image = photo;
+                                                           self.thumbnailView.image = photo;
                                                        });
                                                    }];
 }
 
 - (void)play:(PHAsset *)asset {
-    __weak typeof(self) weakSelf = self;
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
         PHVideoRequestOptions *options = [[PHVideoRequestOptions alloc] init];
         options.networkAccessAllowed = YES;
@@ -67,9 +65,9 @@
                               options:options
                         resultHandler:^(AVPlayerItem *_Nullable playerItem, NSDictionary *_Nullable info) {
                             dispatch_async(dispatch_get_main_queue(), ^{
-                                weakSelf.player.playerItem = playerItem;
-                                weakSelf.player.delegate = weakSelf;
-                                [weakSelf.player play];
+                                self.player.playerItem = playerItem;
+                                self.player.delegate = self;
+                                [self.player play];
                             });
                         }];
     });

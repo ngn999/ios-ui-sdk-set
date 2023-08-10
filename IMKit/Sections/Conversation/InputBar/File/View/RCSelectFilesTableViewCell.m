@@ -9,7 +9,7 @@
 #import "RCSelectFilesTableViewCell.h"
 #import "RCKitCommonDefine.h"
 #import "RCKitConfig.h"
-
+#import "RCSemanticContext.h"
 @implementation RCSelectFilesTableViewCell
 
 - (instancetype)initWithFrame:(CGRect)frame {
@@ -40,7 +40,7 @@
     _fileIconImageView.translatesAutoresizingMaskIntoConstraints = NO;
     [self.contentView addSubview:_fileIconImageView];
 
-    _fileNameLabel = [UILabel new];
+    _fileNameLabel = [RCBaseLabel new];
     _fileNameLabel.translatesAutoresizingMaskIntoConstraints = NO;
     _fileNameLabel.font = [[RCKitConfig defaultConfig].font fontOfSecondLevel];
     _fileNameLabel.textColor = [RCKitUtility generateDynamicColor:HEXCOLOR(0x000000) darkColor:RCMASKCOLOR(0xffffff, 0.9)];

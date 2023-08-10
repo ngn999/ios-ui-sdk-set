@@ -73,7 +73,11 @@ extern NSString *const RCKitDispatchDownloadMediaNotification;
     UICollectionViewDelegate, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout, RCMessageCellDelegate,
     RCChatSessionInputBarControlDelegate, UIGestureRecognizerDelegate, UIScrollViewDelegate,
     UINavigationControllerDelegate, RCPublicServiceMessageCellDelegate, RCTypingStatusDelegate,
-    RCChatSessionInputBarControlDataSource, RCMessagesMultiSelectedProtocol, RCReferencingViewDelegate, RCTextPreviewViewDelegate>
+RCChatSessionInputBarControlDataSource, RCMessagesMultiSelectedProtocol, RCReferencingViewDelegate, RCTextPreviewViewDelegate> {
+    int _defaultLocalHistoryMessageCount;
+    int _defaultMessageCount;
+    int _defaultRemoteHistoryMessageCount;
+}
 
 @property (nonatomic, strong) RCConversationDataSource *dataSource;
 @property (nonatomic, strong) RCConversationVCUtil *util;
@@ -167,8 +171,7 @@ static NSString *const rcUnknownMessageCellIndentifier = @"rcUnknownMessageCellI
     self.util = [[RCConversationVCUtil alloc] init:self];
     self.csUtil = [[RCConversationCSUtil alloc] init:self];
     self.enableUnreadMentionedIcon = YES;
-    self.defaultLocalHistoryMessageCount = 10;
-    self.defaultRemoteHistoryMessageCount = 10;
+    self.defaultMessageCount = 10;
 }
 
 - (void)viewDidLoad {
@@ -339,10 +342,7 @@ static NSString *const rcUnknownMessageCellIndentifier = @"rcUnknownMessageCellI
     [self registerClass:[RCRichContentMessageCell class] forMessageClass:[RCRichContentMessage class]];
     [self registerClass:[RCFileMessageCell class] forMessageClass:[RCFileMessage class]];
     [self registerClass:[RCReferenceMessageCell class] forMessageClass:[RCReferenceMessage class]];
-    if (NSClassFromString(@"RCSightCapturer")) {
-        [self registerClass:[RCSightMessageCell class] forMessageClass:[RCSightMessage class]];
-    }
-
+    [self registerClass:[RCSightMessageCell class] forMessageClass:[RCSightMessage class]];
     [self registerClass:[RCTipMessageCell class] forMessageClass:[RCInformationNotificationMessage class]];
     [self registerClass:[RCTipMessageCell class] forMessageClass:[RCDiscussionNotificationMessage class]];
     [self registerClass:[RCTipMessageCell class] forMessageClass:[RCGroupNotificationMessage class]];
@@ -728,25 +728,26 @@ static NSString *const rcUnknownMessageCellIndentifier = @"rcUnknownMessageCellI
 - (void)didReceiveRecallMessageNotification:(NSNotification *)notification {
     __weak typeof(self) __blockSelf = self;
     dispatch_async(dispatch_get_main_queue(), ^{
+        __strong typeof(__blockSelf) strongSelf = __blockSelf;
         RCMessage *recalledMsg = notification.object;
         long recalledMsgId = recalledMsg.messageId;
         if ([RCVoicePlayer defaultPlayer].isPlaying &&
             [RCVoicePlayer defaultPlayer].messageId == recalledMsgId) {
             [[RCVoicePlayer defaultPlayer] stopPlayVoice];
         }
-        [__blockSelf.dataSource didRecallMessage:recalledMsg];
-        if (self.enableUnreadMentionedIcon && recalledMsg.conversationType == self.conversationType &&
-            [recalledMsg.targetId isEqual:self.targetId] &&
-            ![self isRemainMessageExisted] && self.dataSource.unreadMentionedMessages.count != 0) {
+        [strongSelf.dataSource didRecallMessage:recalledMsg];
+        if (strongSelf.enableUnreadMentionedIcon && recalledMsg.conversationType == strongSelf.conversationType &&
+            [recalledMsg.targetId isEqual:strongSelf.targetId] &&
+            ![strongSelf isRemainMessageExisted] && strongSelf.dataSource.unreadMentionedMessages.count != 0) {
             //遍历删除对应的@消息
-            [self.dataSource removeMentionedMessage:recalledMsgId];
+            [strongSelf.dataSource removeMentionedMessage:recalledMsgId];
         }
-        if (self.referencingView && self.referencingView.referModel.messageId == recalledMsgId) {
-            [self.chatSessionInputBarControl resetToDefaultStatus];
-            [self dismissReferencingView:self.referencingView];
-            [RCAlertView showAlertController:nil message:RCLocalizedString(@"MessageRecallAlert") cancelTitle:RCLocalizedString(@"Confirm") inViewController:self];
+        if (strongSelf.referencingView && strongSelf.referencingView.referModel.messageId == recalledMsgId) {
+            [strongSelf.chatSessionInputBarControl resetToDefaultStatus];
+            [strongSelf dismissReferencingView:strongSelf.referencingView];
+            [RCAlertView showAlertController:nil message:RCLocalizedString(@"MessageRecallAlert") cancelTitle:RCLocalizedString(@"Confirm") inViewController:strongSelf];
         }
-        [self updateLeftBarUnreadMessageCount:recalledMsg];
+        [strongSelf updateLeftBarUnreadMessageCount:recalledMsg];
     });
 }
 
@@ -1134,7 +1135,7 @@ static NSString *const rcUnknownMessageCellIndentifier = @"rcUnknownMessageCellI
     CGFloat height = 0;
     // 当加载本地历史消息小于 10 时，allMessagesAreLoaded 为 NO，此时高度设置为 0，否则会向下偏移 COLLECTION_VIEW_REFRESH_CONTROL_HEIGHT 的高度
     if(!self.dataSource.allMessagesAreLoaded) {
-        if (self.conversationDataRepository.count < self.defaultLocalHistoryMessageCount) {
+        if (self.conversationDataRepository.count < self.defaultMessageCount) {
             height = 1;
         } else {
             height = COLLECTION_VIEW_REFRESH_CONTROL_HEIGHT;
@@ -1493,12 +1494,15 @@ static NSString *const rcUnknownMessageCellIndentifier = @"rcUnknownMessageCellI
     } else {
         [self.unreadRightBottomIcon setFrame:CGRectMake(self.view.frame.size.width - 5.5 - 35, self.chatSessionInputBarControl.frame.origin.y - 12 - 35, 35, 35)];
     }
+    
     if (self.locatedMessageSentTime == 0 || self.isConversationAppear) {
         //在viewwillapear和viewdidload之前，如果强制定位，则不滑动到底部
         if (self.dataSource.isLoadingHistoryMessage || [self isRemainMessageExisted]) {
             [self loadRemainMessageAndScrollToBottom:YES];
         } else {
-            [self scrollToBottomAnimated:NO];
+            if (self.isConversationAppear) {
+                [self scrollToBottomAnimated:NO];
+            }
         }
     }
 }
@@ -2085,21 +2089,20 @@ static NSString *const rcUnknownMessageCellIndentifier = @"rcUnknownMessageCellI
     if ([[RCIM sharedRCIM].publicServiceInfoDataSource respondsToSelector:@selector(publicServiceProfile:)]) {
         RCPublicServiceProfile *serviceProfile =
             [[RCIM sharedRCIM].publicServiceInfoDataSource publicServiceProfile:self.targetId];
-        __weak typeof(self) weakSelf = self;
         void (^configureInputBar)(RCPublicServiceProfile *profile) = ^(RCPublicServiceProfile *profile) {
             if (profile.menu.menuItems) {
-                [weakSelf.chatSessionInputBarControl
+                [self.chatSessionInputBarControl
                     setInputBarType:RCChatSessionInputBarControlPubType
                               style:RC_CHAT_INPUT_BAR_STYLE_SWITCH_CONTAINER_EXTENTION];
-                weakSelf.chatSessionInputBarControl.publicServiceMenu = profile.menu;
+                self.chatSessionInputBarControl.publicServiceMenu = profile.menu;
             }
             if (profile.disableInput && profile.disableMenu) {
-                weakSelf.chatSessionInputBarControl.hidden = YES;
+                self.chatSessionInputBarControl.hidden = YES;
                 CGFloat screenHeight = self.view.bounds.size.height;
-                CGRect originFrame = weakSelf.conversationMessageCollectionView.frame;
+                CGRect originFrame = self.conversationMessageCollectionView.frame;
                 originFrame.size.height =
-                    screenHeight - originFrame.origin.y - [weakSelf getSafeAreaExtraBottomHeight];
-                weakSelf.conversationMessageCollectionView.frame = originFrame;
+                    screenHeight - originFrame.origin.y - [self getSafeAreaExtraBottomHeight];
+                self.conversationMessageCollectionView.frame = originFrame;
             }
         };
         if (serviceProfile) {
@@ -2585,10 +2588,9 @@ static NSString *const rcUnknownMessageCellIndentifier = @"rcUnknownMessageCellI
     DebugLog(@"message<%ld> send succeeded ", messageId);
     [self.csUtil startNotSendMessageAlertTimer];
 
-    __weak typeof(self) __weakself = self;
     dispatch_async(dispatch_get_main_queue(), ^{
         RCMessage *message = [[RCCoreClient sharedCoreClient] getMessage:messageId];
-        for (RCMessageModel *model in __weakself.conversationDataRepository) {
+        for (RCMessageModel *model in self.conversationDataRepository) {
             if (model.messageId == messageId) {
                 model.sentStatus = SentStatus_SENT;
                 if (model.messageId > 0) {
@@ -2615,8 +2617,8 @@ static NSString *const rcUnknownMessageCellIndentifier = @"rcUnknownMessageCellI
             }
         }
         [self.util sendMessageStatusNotification:CONVERSATION_CELL_STATUS_SEND_SUCCESS messageId:messageId progress:0];
-        if (messageId == __weakself.dataSource.showUnreadViewMessageId) {
-            [__weakself updateLastMessageReadReceiptStatus:messageId content:content];
+        if (messageId == self.dataSource.showUnreadViewMessageId) {
+            [self updateLastMessageReadReceiptStatus:messageId content:content];
         }
     });
 #pragma clang diagnostic push
@@ -2698,19 +2700,20 @@ static NSString *const rcUnknownMessageCellIndentifier = @"rcUnknownMessageCellI
     dispatch_after(
         // 发送失败0.3s之后再刷新，防止没有Cell绘制太慢
         dispatch_time(DISPATCH_TIME_NOW, NSEC_PER_SEC * 0.3f), dispatch_get_main_queue(), ^{
-            for (RCMessageModel *model in __weakself.conversationDataRepository) {
+            __strong typeof(__weakself) strongSelf = __weakself;
+            for (RCMessageModel *model in strongSelf.conversationDataRepository) {
                 if (model.messageId == messageId) {
                     model.sentStatus = SentStatus_FAILED;
                     break;
                 }
             }
-            for (RCMessageModel *model in __weakself.dataSource.cachedReloadMessages) {
+            for (RCMessageModel *model in strongSelf.dataSource.cachedReloadMessages) {
                 if (model.messageId == messageId) {
                     model.sentStatus = SentStatus_FAILED;
                     break;
                 }
             }
-            [self.util sendMessageStatusNotification:CONVERSATION_CELL_STATUS_SEND_FAILED messageId:messageId progress:0];
+            [strongSelf.util sendMessageStatusNotification:CONVERSATION_CELL_STATUS_SEND_FAILED messageId:messageId progress:0];
         });
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
@@ -2727,9 +2730,9 @@ static NSString *const rcUnknownMessageCellIndentifier = @"rcUnknownMessageCellI
                                                                                       content:informationNotifiMsg
                                                                                      sentTime:(message.sentTime + 1)];
         dispatch_async(dispatch_get_main_queue(), ^{
-            tempMessage = [__weakself willAppendAndDisplayMessage:tempMessage];
+            tempMessage = [self willAppendAndDisplayMessage:tempMessage];
             if (tempMessage) {
-                [__weakself appendAndDisplayMessage:tempMessage];
+                [self appendAndDisplayMessage:tempMessage];
             }
         });
     }
@@ -2748,14 +2751,15 @@ static NSString *const rcUnknownMessageCellIndentifier = @"rcUnknownMessageCellI
     dispatch_after(
         // 发送失败0.3s之后再刷新，防止没有Cell绘制太慢
         dispatch_time(DISPATCH_TIME_NOW, NSEC_PER_SEC * 0.3f), dispatch_get_main_queue(), ^{
-            for (RCMessageModel *model in __weakself.conversationDataRepository) {
+            __strong typeof(__weakself) strongSelf = __weakself;
+            for (RCMessageModel *model in strongSelf.conversationDataRepository) {
                 if (model.messageId == messageId) {
                     model.sentStatus = SentStatus_CANCELED;
                     break;
                 }
             }
 
-            [self.util sendMessageStatusNotification:CONVERSATION_CELL_STATUS_SEND_CANCELED messageId:messageId progress:0];
+            [strongSelf.util sendMessageStatusNotification:CONVERSATION_CELL_STATUS_SEND_CANCELED messageId:messageId progress:0];
         });
 
     [self didCancelMessage:content];
@@ -2860,7 +2864,6 @@ static NSString *const rcUnknownMessageCellIndentifier = @"rcUnknownMessageCellI
 }
 
 - (void)showForwardActionSheet {
-    __weak typeof(self) weakSelf = self;
     NSMutableArray *titleArray = [[NSMutableArray alloc]
         initWithObjects:RCLocalizedString(@"OneByOneForward"), nil];
     if (RCKitConfigCenter.message.enableSendCombineMessage &&
@@ -2871,7 +2874,7 @@ static NSString *const rcUnknownMessageCellIndentifier = @"rcUnknownMessageCellI
                                  cellArray:titleArray
                                cancelTitle:RCLocalizedString(@"Cancel")
                              selectedBlock:^(NSInteger index) {
-        NSArray *selectedMessage = [NSArray arrayWithArray:weakSelf.selectedMessages];
+        NSArray *selectedMessage = [NSArray arrayWithArray:self.selectedMessages];
         if (index == 0) {
             if ([RCCombineMessageUtility allSelectedOneByOneForwordMessagesAreLegal:self.selectedMessages]) {
                 //逐条转发
@@ -2881,10 +2884,10 @@ static NSString *const rcUnknownMessageCellIndentifier = @"rcUnknownMessageCellI
                         [[RCForwardManager sharedInstance] doForwardMessageList:selectedMessage
                                                                conversationList:conversationList
                                                                       isCombine:NO
-                                                        forwardConversationType:weakSelf.conversationType
+                                                        forwardConversationType:self.conversationType
                                                                       completed:^(BOOL success){
                         }];
-                        [weakSelf forwardMessageEnd];
+                        [self forwardMessageEnd];
                     }
                 }];
             } else {
@@ -2899,10 +2902,10 @@ static NSString *const rcUnknownMessageCellIndentifier = @"rcUnknownMessageCellI
                         [[RCForwardManager sharedInstance] doForwardMessageList:selectedMessage
                                                                conversationList:conversationList
                                                                       isCombine:YES
-                                                        forwardConversationType:weakSelf.conversationType
+                                                        forwardConversationType:self.conversationType
                                                                       completed:^(BOOL success){
                         }];
-                        [weakSelf forwardMessageEnd];
+                        [self forwardMessageEnd];
                     }
                 }];
             } else {
@@ -3130,24 +3133,35 @@ static NSString *const rcUnknownMessageCellIndentifier = @"rcUnknownMessageCellI
     _locatedMessageSentTime = locatedMessageSentTime;
 }
 
-- (void)setDefaultLocalHistoryMessageCount:(int)defaultLocalHistoryMessageCount {
-    if (defaultLocalHistoryMessageCount > 100) {
-        defaultLocalHistoryMessageCount = 100;
-    }else if (defaultLocalHistoryMessageCount < 0){
-        defaultLocalHistoryMessageCount = 10;
-    }
-    _defaultLocalHistoryMessageCount = defaultLocalHistoryMessageCount;
+- (void)setDefaultLocalHistoryMessageCount:(int)count {
+    self.defaultMessageCount = count;
 }
 
-- (void)setDefaultRemoteHistoryMessageCount:(int)defaultRemoteHistoryMessageCount {
-    if (defaultRemoteHistoryMessageCount > 100) {
-        defaultRemoteHistoryMessageCount = 100;
-    }else if(defaultRemoteHistoryMessageCount < 0){
-        defaultRemoteHistoryMessageCount = 10;
-    }
-    _defaultRemoteHistoryMessageCount = defaultRemoteHistoryMessageCount;
+- (void)setDefaultRemoteHistoryMessageCount:(int)count {
+    self.defaultMessageCount = count;
 }
 
+- (void)setDefaultMessageCount:(int)count {
+    if (count > 100) {
+        _defaultMessageCount = 100;
+    }else if(count < 2){
+        _defaultMessageCount = 10;
+    } else {
+        _defaultMessageCount = count;
+    }
+}
+
+- (int)defaultMessageCount {
+    return _defaultMessageCount;
+}
+
+- (int)defaultLocalHistoryMessageCount {
+    return self.defaultMessageCount;
+}
+
+- (int)defaultRemoteHistoryMessageCount {
+    return self.defaultMessageCount;
+}
 //设置头像样式
 - (void)setMessageAvatarStyle:(RCUserAvatarStyle)avatarStyle {
     RCKitConfigCenter.ui.globalMessageAvatarStyle = avatarStyle;
@@ -3393,11 +3407,6 @@ static NSString *const rcUnknownMessageCellIndentifier = @"rcUnknownMessageCellI
 - (RCBaseButton *)unReadMentionedButton {
     if (_unReadMentionedButton == nil) {
         _unReadMentionedButton = [RCBaseButton new];
-        CGFloat extraHeight = 0;
-        if ([self getSafeAreaExtraBottomHeight] > 0) {
-            extraHeight = 24; // iphonex 的导航由20变成了44，需要额外加24
-        }
-        
         _unReadMentionedButton.frame = CGRectMake(0, CGRectGetMaxY(self.unReadButton.frame) + 15, 0, 48);
         [_unReadMentionedButton setBackgroundImage:RCResourceImage(@"up") forState:UIControlStateNormal];
         [_unReadMentionedButton addTarget:self action:@selector(tapRightTopUnReadMentionedButton:) forControlEvents:UIControlEventTouchUpInside];
@@ -3410,7 +3419,7 @@ static NSString *const rcUnknownMessageCellIndentifier = @"rcUnknownMessageCellI
 
 - (UILabel *)unReadMentionedLabel {
     if (!_unReadMentionedLabel) {
-        _unReadMentionedLabel = [[UILabel alloc] initWithFrame:CGRectMake(17 + 9 + 6, 0, 0, self.unReadMentionedButton.frame.size.height)];
+        _unReadMentionedLabel = [[UILabel alloc] initWithFrame:CGRectMake(17 + 9 + 6, 0, 0, 48)];
         _unReadMentionedLabel.font = [[RCKitConfig defaultConfig].font fontOfFourthLevel];
         _unReadMentionedLabel.textColor = RCDYCOLOR(0x111f2c, 0x0099ff);
         _unReadMentionedLabel.textAlignment = NSTextAlignmentCenter;
@@ -3440,6 +3449,12 @@ static NSString *const rcUnknownMessageCellIndentifier = @"rcUnknownMessageCellI
                                                           action:nil];
 
         NSArray *items = @[ spaceItem, forwardBarButtonItem, spaceItem, deleteBarButtonItem, spaceItem ];
+        
+        if ([RCKitUtility isRTL]){
+            _messageSelectionToolbar.semanticContentAttribute = UISemanticContentAttributeForceRightToLeft;
+        }else{
+            _messageSelectionToolbar.semanticContentAttribute = UISemanticContentAttributeForceLeftToRight;
+        }
 
         [_messageSelectionToolbar setItems:items animated:YES];
         _messageSelectionToolbar.translucent = NO;

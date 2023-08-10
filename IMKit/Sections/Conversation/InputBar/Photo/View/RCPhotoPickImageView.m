@@ -11,6 +11,8 @@
 #import "RCKitConfig.h"
 #import <MobileCoreServices/UTCoreTypes.h>
 #import "RCBaseImageView.h"
+#import "RCSemanticContext.h"
+#import "RCBaseLabel.h"
 //#import <QuartzCore/QuartzCore.h>
 typedef NS_ENUM(NSUInteger, RCPotoPickStatus) {
     RCPotoPickStatusNormal = 0,
@@ -23,7 +25,7 @@ typedef NS_ENUM(NSUInteger, RCPotoPickStatus) {
 
 @property (nonatomic, strong) UILabel *gifLabel;
 
-@property (nonatomic, strong) UILabel *durationLabel;
+@property (nonatomic, strong) RCBaseLabel *durationLabel;
 @property (nonatomic, strong) RCBaseImageView *videoIcon;
 @end
 
@@ -114,18 +116,15 @@ typedef NS_ENUM(NSUInteger, RCPotoPickStatus) {
     return _typeBackgroundView;
 }
 
-- (UILabel *)durationLabel {
+- (RCBaseLabel *)durationLabel {
     if (!_durationLabel) {
         CGRect frame = CGRectMake(33, 9.5, self.typeBackgroundView.frame.size.width-33, 14);
         if ([RCKitUtility isRTL]) {
             frame = CGRectMake(0, 9.5, self.typeBackgroundView.frame.size.width-33, 14);
         }
-        _durationLabel = [[UILabel alloc] initWithFrame:frame];
+        _durationLabel = [[RCBaseLabel alloc] initWithFrame:frame];
         _durationLabel.textColor = [UIColor whiteColor];
         _durationLabel.font = [[RCKitConfig defaultConfig].font fontOfAssistantLevel];
-        if ([RCKitUtility isRTL]) {
-            _durationLabel.textAlignment = NSTextAlignmentRight;
-        }
         [self.typeBackgroundView addSubview:_durationLabel];
     }
     return _durationLabel;
@@ -137,28 +136,24 @@ typedef NS_ENUM(NSUInteger, RCPotoPickStatus) {
         UIImage *image = RCResourceImage(@"fileicon_video_wall");
         if ([RCKitUtility isRTL]) {
             frame =(CGRect){self.typeBackgroundView.frame.size.width - 6-19, self.typeBackgroundView.frame.size.height-21, 19, 19};
-            image = [image imageFlippedForRightToLeftLayoutDirection];
         }
         _videoIcon = [[RCBaseImageView alloc] initWithFrame:frame];
-        _videoIcon.image = image;
+        _videoIcon.image = [RCSemanticContext imageflippedForRTL:image];
         [self.typeBackgroundView addSubview:_videoIcon];
     }
     return _videoIcon;
 }
 
-- (UILabel *)gifLabel {
+- (RCBaseLabel *)gifLabel {
     if (!_gifLabel) {
         CGRect frame = CGRectMake(6, 9.5, self.typeBackgroundView.frame.size.width-6, 14);
         if ([RCKitUtility isRTL]) {
             frame =CGRectMake(0, 9.5, self.typeBackgroundView.frame.size.width-6, 14);
         }
-        _gifLabel = [[UILabel alloc] initWithFrame:frame];
+        _gifLabel = [[RCBaseLabel alloc] initWithFrame:frame];
         _gifLabel.textColor = [UIColor whiteColor];
         _gifLabel.font = [[RCKitConfig defaultConfig].font fontOfAssistantLevel];
         _gifLabel.text = @"GIF";
-        if ([RCKitUtility isRTL]) {
-            _gifLabel.textAlignment = NSTextAlignmentRight;
-        }
         [self.typeBackgroundView addSubview:_gifLabel];
     }
     return _gifLabel;

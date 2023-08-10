@@ -13,13 +13,16 @@
 @end
 
 @implementation RCBaseNavigationController
-
+ 
 - (instancetype)initWithRootViewController:(UIViewController *)rootViewController {
     self = [super initWithRootViewController:rootViewController];
     if (self) {
         if ([RCSemanticContext isRTL]) {
             self.view.semanticContentAttribute = UISemanticContentAttributeForceRightToLeft;
             self.navigationBar.semanticContentAttribute = UISemanticContentAttributeForceRightToLeft;
+        }else{
+            self.view.semanticContentAttribute = UISemanticContentAttributeForceLeftToRight;
+            self.navigationBar.semanticContentAttribute = UISemanticContentAttributeForceLeftToRight;
         }
     }
     return self;

@@ -22,6 +22,7 @@
 #import <RongDiscussion/RongDiscussion.h>
 #import <RongPublicService/RongPublicService.h>
 #import <UIKit/UIKit.h>
+#import "RCSemanticContext.h"
 @interface RCKitWeakRefObject : NSObject
 @property (nonatomic, weak) id weakRefObj;
 + (instancetype)refWithObject:(id)obj;
@@ -291,7 +292,7 @@
                                          objectName:(NSString *)objectName
                                           messageId:(long)messageId
                                          messageUId:(NSString *)messageUId {
-    NSString *type = @"PR";
+    NSString *type;
     switch (conversationType) {
     case ConversationType_PRIVATE:
         type = @"PR";
@@ -749,21 +750,27 @@
     CGFloat width = image.size.width;
     RCButton *backBtn = [RCButton buttonWithType:UIButtonTypeCustom];
     backBtn.frame = CGRectMake(0, 0, width, image.size.height);
-    [backBtn setImage:image forState:UIControlStateNormal];
+    [backBtn setImage:[RCSemanticContext imageflippedForRTL:image] forState:UIControlStateNormal];
     [backBtn setTitle:title forState:UIControlStateNormal];
     [backBtn setTitleColor:RCKitConfigCenter.ui.globalNavigationBarTintColor forState:UIControlStateNormal];
     [backBtn addTarget:target action:action forControlEvents:UIControlEventTouchUpInside];
-    
+    if([RCKitUtility isRTL]){
+        backBtn.semanticContentAttribute = UISemanticContentAttributeForceRightToLeft;
+    }else{
+        backBtn.semanticContentAttribute = UISemanticContentAttributeForceLeftToRight;
+    }
     UIBarButtonItem *leftButton = [[UIBarButtonItem alloc] initWithCustomView:backBtn];
     return @[leftButton];
 }
 
 + (BOOL)isRTL {
-    if (@available(iOS 9.0, *)) {
+    if (RCKitConfigCenter.ui.layoutDirection == RCKitInterfaceLayoutDirectionUnspecified){
         UIWindow *window = [self getKeyWindow];
         UISemanticContentAttribute attr = window.semanticContentAttribute;
         UIUserInterfaceLayoutDirection _layoutDirection = [UIView userInterfaceLayoutDirectionForSemanticContentAttribute:attr];
         return _layoutDirection == UIUserInterfaceLayoutDirectionRightToLeft;
+    } else if (RCKitConfigCenter.ui.layoutDirection == RCKitInterfaceLayoutDirectionRightToLeft){
+        return YES;
     }
     return NO;
 }

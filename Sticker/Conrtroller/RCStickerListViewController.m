@@ -166,11 +166,11 @@
 - (UIView *)headerView {
     if (_headerView == nil) {
         _headerView = [[UIView alloc] init];
-        UILabel *headerLabel = [[UILabel alloc] init];
+        RCBaseLabel *headerLabel = [[RCBaseLabel alloc] init];
         headerLabel.font = [UIFont systemFontOfSize:12];
         headerLabel.textColor = HEXCOLOR(0x999999);
         headerLabel.text = RongStickerString(@"download_package");
-        headerLabel.frame = CGRectMake(15, 10, 200, 17);
+        headerLabel.frame = CGRectMake(15, 10, ScreenWidth-30, 17);
         [_headerView addSubview:headerLabel];
     }
     return _headerView;

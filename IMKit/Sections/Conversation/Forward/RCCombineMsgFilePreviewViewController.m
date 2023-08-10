@@ -91,23 +91,22 @@
 #pragma mark - Private Methods
 - (void)startFileDownLoad {
     [self layoutForDownloading];
-    __weak typeof(self) weakSelf = self;
     [[RCCoreClient sharedCoreClient] downloadMediaFile:self.fileName mediaUrl:self.remoteURL progress:^(int progress) {
         dispatch_main_async_safe(^{
-            [weakSelf downloading:progress * 0.01];
+            [self downloading:progress * 0.01];
         });
     } success:^(NSString *mediaPath) {
         dispatch_main_async_safe(^{
-            weakSelf.localPath = mediaPath;
-            if ([weakSelf isFileSupported]) {
-                [weakSelf layoutAndPreviewFile];
+            self.localPath = mediaPath;
+            if ([self isFileSupported]) {
+                [self layoutAndPreviewFile];
             } else {
-                [weakSelf layoutForShowFileInfo];
+                [self layoutForShowFileInfo];
             }
         });
     } error:^(RCErrorCode errorCode) {
         dispatch_main_async_safe(^{
-            [weakSelf layoutForShowFileInfo];
+            [self layoutForShowFileInfo];
             UIAlertController *alertController = [UIAlertController
                                                   alertControllerWithTitle:nil
                                                   message:RCLocalizedString(@"FileDownloadFailed")

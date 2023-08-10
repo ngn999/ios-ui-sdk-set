@@ -9,10 +9,11 @@
 #import <UIKit/UIKit.h>
 #import "RCBaseTableViewCell.h"
 #import "RCBaseImageView.h"
+#import "RCBaseLabel.h"
 @interface RCSelectDirectoryTableViewCell : RCBaseTableViewCell
 
 @property (nonatomic, strong) RCBaseImageView *directoryImageView;
 
-@property (nonatomic, strong) UILabel *directoryNameLabel;
+@property (nonatomic, strong) RCBaseLabel *directoryNameLabel;
 
 @end

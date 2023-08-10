@@ -18,7 +18,7 @@
 
 @property (nonatomic, strong) RCBaseImageView *headImage;
 
-@property (nonatomic, strong) UILabel *nameLabel;
+@property (nonatomic, strong) RCBaseLabel *nameLabel;
 
 @property (nonatomic, strong) RCBaseButton *deleteBtn;
 
@@ -81,16 +81,11 @@
     return _headImage;
 }
 
-- (UILabel *)nameLabel {
+- (RCBaseLabel *)nameLabel {
     if (_nameLabel == nil) {
-        _nameLabel = [[UILabel alloc] init];
+        _nameLabel = [[RCBaseLabel alloc] init];
         _nameLabel.font = [UIFont systemFontOfSize:18];
         _nameLabel.textColor = RCDYCOLOR(0x000000, 0x9f9f9f);
-        if([RCKitUtility isRTL]) {
-            _nameLabel.textAlignment = NSTextAlignmentRight;
-        } else {
-            _nameLabel.textAlignment = NSTextAlignmentLeft;
-        }
     }
     return _nameLabel;
 }

@@ -227,6 +227,12 @@
     }
     cell.backgroundColor = [RCKitUtility generateDynamicColor:HEXCOLOR(0xffffff)
                                                           darkColor:[HEXCOLOR(0x1c1c1e) colorWithAlphaComponent:0.4]];
+    if([RCKitUtility isRTL]){
+        cell.textLabel.semanticContentAttribute = UISemanticContentAttributeForceRightToLeft;
+    }else{
+        cell.textLabel.semanticContentAttribute = UISemanticContentAttributeForceLeftToRight;
+    }
+
     return cell;
 }
 

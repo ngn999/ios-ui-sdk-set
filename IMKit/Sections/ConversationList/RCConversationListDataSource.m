@@ -97,19 +97,20 @@
         NSMutableArray<RCConversationModel *> *modelList = [[NSMutableArray alloc] init];
 
         if ([[RCIM sharedRCIM] getConnectionStatus] != ConnectionStatus_SignOut) {
-            int c = self.currentCount < PagingCount ? PagingCount : (int)self.currentCount;
-            NSArray *conversationList =
-                [[RCCoreClient sharedCoreClient] getConversationList:self.displayConversationTypeArray
-                                                             count:c
-                                                         startTime:0];
-            [RCIMNotificationDataContext updateNotificationLevelWith:conversationList];
-            for (RCConversation *conversation in conversationList) {
-                RCConversationModel *model = [[RCConversationModel alloc] initWithConversation:conversation extend:nil];
-                model.topCellBackgroundColor = self.topCellBackgroundColor;
-                model.cellBackgroundColor = self.cellBackgroundColor;
-                RCLogI(@"conversation targetid:%@,type:%@,unreadMessageCount:%@", conversation.targetId, @(conversation.conversationType), @(model.unreadMessageCount));
-                [modelList addObject:model];
-            }
+            int count = (int)MAX(self.currentCount, PagingCount);
+            dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
+            [[RCCoreClient sharedCoreClient] getConversationList:self.displayConversationTypeArray count:count startTime:0 completion:^(NSArray<RCConversation *> * _Nullable conversationList) {
+                [RCIMNotificationDataContext updateNotificationLevelWith:conversationList];
+                for (RCConversation *conversation in conversationList) {
+                    RCConversationModel *model = [[RCConversationModel alloc] initWithConversation:conversation extend:nil];
+                    model.topCellBackgroundColor = self.topCellBackgroundColor;
+                    model.cellBackgroundColor = self.cellBackgroundColor;
+                    RCLogI(@"conversation targetid:%@,type:%@,unreadMessageCount:%@", conversation.targetId, @(conversation.conversationType), @(model.unreadMessageCount));
+                    [modelList addObject:model];
+                }
+                dispatch_semaphore_signal(semaphore);
+            }];
+            dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, (int64_t)(4 * NSEC_PER_SEC)));
         }
         self.currentCount = modelList.count;
         self.collectedModelDict = [NSMutableDictionary new];
@@ -218,15 +219,14 @@
 #pragma mark - Notification
 
 - (void)didReceiveMessageNotification:(NSNotification *)notification {
-    __weak typeof(self) weakSelf = self;
     dispatch_async(self.updateEventQueue, ^{
-        if (weakSelf.isConverstaionListAppear) {
-            weakSelf.throttleReloadAction();
+        if (self.isConverstaionListAppear) {
+            self.throttleReloadAction();
         }else {
             int left = [notification.userInfo[@"left"] intValue];
             if (left == 0) {
-                if (weakSelf.delegate && [weakSelf.delegate respondsToSelector:@selector(notifyUpdateUnreadMessageCountInDataSource)]) {
-                    [weakSelf.delegate notifyUpdateUnreadMessageCountInDataSource];
+                if (self.delegate && [self.delegate respondsToSelector:@selector(notifyUpdateUnreadMessageCountInDataSource)]) {
+                    [self.delegate notifyUpdateUnreadMessageCountInDataSource];
                 }
             }
         }
@@ -478,11 +478,12 @@
     if (!_throttleReloadAction) {
         __weak typeof(self) weakSelf = self;
         _throttleReloadAction = [self getThrottleActionWithTimeInteval:0.5 action:^{
-            if (weakSelf.delegate && [weakSelf.delegate respondsToSelector:@selector(refreshConversationTableViewIfNeededInDataSource:)]) {
-                [weakSelf.delegate refreshConversationTableViewIfNeededInDataSource:weakSelf];
+            __strong typeof(weakSelf) strongSelf = weakSelf;
+            if (strongSelf.delegate && [strongSelf.delegate respondsToSelector:@selector(refreshConversationTableViewIfNeededInDataSource:)]) {
+                [strongSelf.delegate refreshConversationTableViewIfNeededInDataSource:strongSelf];
             }
-            if (weakSelf.delegate && [weakSelf.delegate respondsToSelector:@selector(notifyUpdateUnreadMessageCountInDataSource)]) {
-                [weakSelf.delegate notifyUpdateUnreadMessageCountInDataSource];
+            if (strongSelf.delegate && [strongSelf.delegate respondsToSelector:@selector(notifyUpdateUnreadMessageCountInDataSource)]) {
+                [strongSelf.delegate notifyUpdateUnreadMessageCountInDataSource];
             }
         }];
     }

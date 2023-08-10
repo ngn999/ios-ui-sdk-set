@@ -187,11 +187,12 @@
     cell.highlightedImage = item.highlightedImage;
     __weak typeof(self) weakSelf = self;
     [cell setItemclick:^{
-        if (weakSelf.pluginBoardDelegate &&
-            [weakSelf.pluginBoardDelegate respondsToSelector:@selector(pluginBoardView:clickedItemWithTag:)]) {
+        __strong typeof(weakSelf) strongSelf = weakSelf;
+        if (strongSelf.pluginBoardDelegate &&
+            [strongSelf.pluginBoardDelegate respondsToSelector:@selector(pluginBoardView:clickedItemWithTag:)]) {
             RCPluginBoardItem *item =
-                weakSelf.allItems[indexPath.row + indexPath.section * weakSelf.layout.itemsPerSection];
-            [weakSelf.pluginBoardDelegate pluginBoardView:weakSelf clickedItemWithTag:item.tag];
+            strongSelf.allItems[indexPath.row + indexPath.section * strongSelf.layout.itemsPerSection];
+            [strongSelf.pluginBoardDelegate pluginBoardView:strongSelf clickedItemWithTag:item.tag];
         }
     }];
     cell.tag = item.tag;

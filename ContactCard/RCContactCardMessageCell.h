@@ -16,7 +16,7 @@
 /**
  *  昵称label
  */
-@property (nonatomic, strong) UILabel *nameLabel;
+@property (nonatomic, strong) RCBaseLabel *nameLabel;
 
 /**
  *  头像

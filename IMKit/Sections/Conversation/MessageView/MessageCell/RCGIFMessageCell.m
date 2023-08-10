@@ -203,21 +203,20 @@ extern NSString *const RCKitDispatchDownloadMediaNotification;
 }
 
 - (void)showGifImageView:(NSString *)localPath {
-    __weak typeof(self) weakSelf = self;
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
         NSData *data = [NSData dataWithContentsOfFile:[RCUtilities getCorrectedFilePath:localPath]];
         RCGIFImage *gifImage = [RCGIFImage animatedImageWithGIFData:data];
         dispatch_main_async_safe(^{
             if (gifImage) {
                 if (self.model.content.destructDuration > 0) {
-                    weakSelf.gifImageView.hidden = YES;
-                    weakSelf.destructBackgroundView.hidden = NO;
+                    self.gifImageView.hidden = YES;
+                    self.destructBackgroundView.hidden = NO;
                 } else {
-                    weakSelf.destructBackgroundView.hidden = YES;
-                    weakSelf.gifImageView.hidden = NO;
-                    weakSelf.loadBackButton.hidden = YES;
-                    weakSelf.loadingImageView.hidden = YES;
-                    weakSelf.gifImageView.animatedImage = gifImage;
+                    self.destructBackgroundView.hidden = YES;
+                    self.gifImageView.hidden = NO;
+                    self.loadBackButton.hidden = YES;
+                    self.loadingImageView.hidden = YES;
+                    self.gifImageView.animatedImage = gifImage;
                 }
             } else {
                 DebugLog(@"[RongIMKit]: RCMessageModel.content is NOT RCGIFMessage object");

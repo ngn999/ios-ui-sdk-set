@@ -9,12 +9,13 @@
 #import <UIKit/UIKit.h>
 #import "RCBaseTableViewCell.h"
 #import "RCBaseImageView.h"
+#import "RCBaseLabel.h"
 @interface RCSelectFilesTableViewCell : RCBaseTableViewCell
 
 @property (nonatomic, strong) RCBaseImageView *selectedImageView;
 
 @property (nonatomic, strong) RCBaseImageView *fileIconImageView;
 
-@property (nonatomic, strong) UILabel *fileNameLabel;
+@property (nonatomic, strong) RCBaseLabel *fileNameLabel;
 
 @end

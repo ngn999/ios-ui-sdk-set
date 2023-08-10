@@ -70,14 +70,13 @@
     self.representedAssetIdentifier = modelIdentifier;
     
     // 获取缩略图
-    __weak typeof(self) weakSelf = self;
     [[RCAssetHelper shareAssetHelper]
         getThumbnailWithAsset:model.asset
                          size:CGSizeMake((WIDTH * SCREEN_SCALE), (WIDTH * SCREEN_SCALE))
                        result:^(UIImage *thumbnailImage) {
         dispatch_main_async_safe(^{
-            weakSelf.thumbnailImage = thumbnailImage;
-            weakSelf.photoImageView.image = thumbnailImage;
+            self.thumbnailImage = thumbnailImage;
+            self.photoImageView.image = thumbnailImage;
         });
     }];
     
@@ -89,21 +88,20 @@
     if(!self.assetModel) {
         return;
     }
-    __weak typeof(self) weakSelf = self;
     if(self.assetModel.mediaType == PHAssetMediaTypeVideo && NSClassFromString(@"RCSightCapturer")) {
         [[RCAssetHelper shareAssetHelper] getOriginVideoWithAsset:self.assetModel.asset result:^(AVAsset *avAsset, NSDictionary *info, NSString *imageIdentifier) {
-            if (![[[RCAssetHelper shareAssetHelper] getAssetIdentifier:weakSelf.assetModel.asset] isEqualToString:imageIdentifier]) {
+            if (![[[RCAssetHelper shareAssetHelper] getAssetIdentifier:self.assetModel.asset] isEqualToString:imageIdentifier]) {
                 return;
             }
             dispatch_main_async_safe(^{
                 if (!avAsset) {
-                    if(weakSelf.delegate && [weakSelf.delegate respondsToSelector:@selector(downloadFailFromiCloud)]) {
-                        [weakSelf.delegate downloadFailFromiCloud];
+                    if(self.delegate && [self.delegate respondsToSelector:@selector(downloadFailFromiCloud)]) {
+                        [self.delegate downloadFailFromiCloud];
                     }
                     return;
                 }
-                [weakSelf changeMessageModelState:sender.selected
-                                   assetModel:weakSelf.assetModel];
+                [self changeMessageModelState:sender.selected
+                                   assetModel:self.assetModel];
             });
         } progressHandler:^(double progress, NSError * _Nonnull error, BOOL * _Nonnull stop, NSDictionary * _Nonnull info) {
             
@@ -113,19 +111,19 @@
     [[RCAssetHelper shareAssetHelper]
         getOriginImageDataWithAsset:self.assetModel
                              result:^(NSData *imageData, NSDictionary *info, RCAssetModel *assetModel) {
-                                 if (![weakSelf.representedAssetIdentifier isEqualToString:[[RCAssetHelper shareAssetHelper]
+                                 if (![self.representedAssetIdentifier isEqualToString:[[RCAssetHelper shareAssetHelper]
                                  getAssetIdentifier:assetModel.asset]]) {
                                      return;
                                  }
         
                                  dispatch_main_async_safe(^{
-                                     if(!imageData || [weakSelf.assetModel isVideoAssetInvalid]) {
-                                         if(weakSelf.delegate && [weakSelf.delegate respondsToSelector:@selector(downloadFailFromiCloud)]) {
-                                             [weakSelf.delegate downloadFailFromiCloud];
+                                     if(!imageData || [self.assetModel isVideoAssetInvalid]) {
+                                         if(self.delegate && [self.delegate respondsToSelector:@selector(downloadFailFromiCloud)]) {
+                                             [self.delegate downloadFailFromiCloud];
                                          }
                                          return;
                                      }
-                                     if ([[weakSelf.assetModel.asset valueForKey:@"uniformTypeIdentifier"]
+                                     if ([[self.assetModel.asset valueForKey:@"uniformTypeIdentifier"]
                                              isEqualToString:(__bridge NSString *)kUTTypeGIF]) {
                                          if (imageData.length >
                                              [[RCCoreClient sharedCoreClient] getGIFLimitSize] * 1024) {
@@ -145,11 +143,11 @@
                                                                   animated:YES
                                                                 completion:nil];
                                          } else {
-                                             [weakSelf changeMessageModelState:sender.selected
+                                             [self changeMessageModelState:sender.selected
                                                                     assetModel:assetModel];
                                          }
                                      } else {
-                                         [weakSelf changeMessageModelState:sender.selected assetModel:assetModel];
+                                         [self changeMessageModelState:sender.selected assetModel:assetModel];
                                      }
 
                                  });
@@ -211,7 +209,7 @@
     [self.contentView addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"V:[_selectbutton(28)]-2-|"
                                                                  options:kNilOptions
                                                                  metrics:nil
-                                                                   views:NSDictionaryOfVariableBindings(_selectbutton)]];
+                                                                   views:NSDictionaryOfVariableBindings(_selectbutton)]];  
     [self.contentView addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"H:[_selectbutton(28)]-2-|"
                                                                  options:kNilOptions
                                                                  metrics:nil

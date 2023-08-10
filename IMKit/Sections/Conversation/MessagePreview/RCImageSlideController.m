@@ -180,7 +180,7 @@
     for (RCMessage *mesage in array) {
         if (!(mesage.content.destructDuration > 0)) {
             RCMessageModel *model = [RCMessageModel modelWithMessage:mesage];
-            [backwardMessages addObject:model];
+            if (model) [backwardMessages addObject:model];
         }
     }
     return backwardMessages.copy;
@@ -456,7 +456,7 @@
     return nil;
 }
 
-- (UICollectionView *)collectionView {
+- (RCBaseCollectionView *)collectionView {
     if(!_collectionView) {
         self.flowLayout = [[RCPhotoPreviewCollectionViewFlowLayout alloc] init];
         [self.flowLayout setScrollDirection:UICollectionViewScrollDirectionHorizontal];
@@ -471,9 +471,6 @@
         [_collectionView setPagingEnabled:YES];
         _collectionView.showsHorizontalScrollIndicator = NO;
         _collectionView.backgroundColor = [UIColor blackColor];
-        if (([RCKitUtility isRTL])) {
-            _collectionView.semanticContentAttribute = UISemanticContentAttributeForceRightToLeft;
-        }
     }
     return _collectionView;
 }

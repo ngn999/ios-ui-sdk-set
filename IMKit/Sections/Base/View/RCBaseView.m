@@ -7,15 +7,37 @@
 //
 
 #import "RCBaseView.h"
-
+#import "RCSemanticContext.h"
 @implementation RCBaseView
-
-/*
-// Only override drawRect: if you perform custom drawing.
-// An empty implementation adversely affects performance during animation.
-- (void)drawRect:(CGRect)rect {
-    // Drawing code
+- (instancetype)initWithFrame:(CGRect)frame {
+    self = [super initWithFrame:frame];
+    if (self) {
+        [self updateRTLUI];
+    }
+    return self;
 }
-*/
 
+- (instancetype)init{
+    self = [super init];
+    if(self){
+        [self updateRTLUI];
+    }
+    return self;
+}
+
+- (instancetype)initWithCoder:(NSCoder *)coder{
+    self = [super initWithCoder:coder];
+    if(self){
+        [self updateRTLUI];
+    }
+    return self;
+}
+
+- (void)updateRTLUI{
+    if ([RCSemanticContext isRTL]) {
+        self.semanticContentAttribute = UISemanticContentAttributeForceRightToLeft;
+    }else{
+        self.semanticContentAttribute = UISemanticContentAttributeForceLeftToRight;
+    }
+}
 @end

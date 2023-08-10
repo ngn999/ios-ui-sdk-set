@@ -20,7 +20,7 @@
 @property (nonatomic, strong) UISlider *slider;
 @property (nonatomic, strong) RCBaseButton *centerPlayBtn;
 @property (nonatomic, strong) UIView *bottomView;
-@property (nonatomic, strong) UIView *topView;
+@property (nonatomic, strong) RCBaseView *topView;
 @property (nonatomic, strong) RCBaseImageView *thumbnailView;
 
 @property (nonatomic, strong) NSLayoutConstraint *bottomConstraint;
@@ -77,6 +77,11 @@
                       action:@selector(sliderUpInside)
             forControlEvents:UIControlEventTouchUpInside | UIControlEventTouchUpOutside | UIControlEventTouchCancel];
         [_slider addTarget:self action:@selector(sliderTouchDown) forControlEvents:UIControlEventTouchDown];
+        if([RCKitUtility isRTL]){
+            _slider.semanticContentAttribute = UISemanticContentAttributeForceRightToLeft;
+        }else{
+            _slider.semanticContentAttribute = UISemanticContentAttributeForceLeftToRight;
+        }
     }
     return _slider;
 }
@@ -107,9 +112,9 @@
     return _durationTimeLabel;
 }
 
-- (UIView *)topView {
+- (RCBaseView *)topView {
     if (!_topView) {
-        _topView = [[UIView alloc] init];
+        _topView = [[RCBaseView alloc] init];
         RCBaseImageView *backgroudView = [[RCBaseImageView alloc] init];
         backgroudView.image = RCResourceImage(@"player_shadow_top");
         [_topView addSubview:backgroudView];
@@ -135,7 +140,7 @@
     if (!_bottomView) {
         _bottomView = [[UIView alloc] init];
 
-        UIView *contentView = [[UIView alloc] init];
+        RCBaseView *contentView = [[RCBaseView alloc] init];
         contentView.backgroundColor = [UIColor clearColor];
         [_bottomView addSubview:contentView];
         [self constraintAlignSuperView:contentView alignSpace:0 AlignMent:CCSightLayoutAlignLeading];

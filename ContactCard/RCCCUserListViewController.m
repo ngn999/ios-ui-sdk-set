@@ -164,6 +164,11 @@
                                                                 darkColor:[UIColor blackColor]]
                                            .CGColor;
         _searchBar.layer.borderWidth = 1;
+        if ([RCKitUtility isRTL]) {
+            _searchBar.semanticContentAttribute = UISemanticContentAttributeForceRightToLeft;
+        }else{
+            _searchBar.semanticContentAttribute = UISemanticContentAttributeForceLeftToRight;
+        }
     }
     return _searchBar;
 }

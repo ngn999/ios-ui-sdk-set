@@ -107,11 +107,8 @@
 - (NSArray *)cellCollections {
     if (!_cellCollections) {
         NSMutableArray *collections = [[NSMutableArray alloc] init];
-        
         [collections addObject:[self p_getMainSections]];
-        
         [collections addObject:[self p_getActionSections]];
-
         _cellCollections = collections;
     }
     return _cellCollections;
@@ -297,36 +294,32 @@
     return container;
 }
 - (void)subscribePublicService {
-    __weak RCPublicServiceProfileViewController *weakSelf = self;
-
     [RCKitUtility showProgressViewFor:self.tableView
                                        text:RCLocalizedString(@"Wait")
                                    animated:YES];
     [[RCPublicServiceClient sharedPublicServiceClient] subscribePublicService:self.serviceProfile.publicServiceType
         publicServiceId:self.serviceProfile.publicServiceId
         success:^{
-            if (!weakSelf.serviceProfile.followed) {
-                weakSelf.serviceProfile.followed = YES;
+            if (!self.serviceProfile.followed) {
+                self.serviceProfile.followed = YES;
                 dispatch_async(dispatch_get_main_queue(), ^{
-                    weakSelf.serviceProfile = weakSelf.serviceProfile;
-                    weakSelf.cellCollections = nil;
-                    [weakSelf cellCollections];
-                    [weakSelf.tableView reloadData];
+                    self.serviceProfile = self.serviceProfile;
+                    self.cellCollections = nil;
+                    [self cellCollections];
+                    [self.tableView reloadData];
                 });
             }
             dispatch_async(dispatch_get_main_queue(), ^{
-                [RCKitUtility hideProgressViewFor:weakSelf.tableView animated:YES];
+                [RCKitUtility hideProgressViewFor:self.tableView animated:YES];
             });
         }
         error:^(RCErrorCode status) {
             dispatch_async(dispatch_get_main_queue(), ^{
-                [RCKitUtility hideProgressViewFor:weakSelf.tableView animated:YES];
+                [RCKitUtility hideProgressViewFor:self.tableView animated:YES];
             });
         }];
 }
 - (void)unsubscribePublicService {
-    __weak RCPublicServiceProfileViewController *weakSelf = self;
-
     [RCKitUtility showProgressViewFor:self.tableView
                                        text:RCLocalizedString(@"Wait")
                                    animated:YES];
@@ -334,32 +327,32 @@
     [[RCPublicServiceClient sharedPublicServiceClient] unsubscribePublicService:self.serviceProfile.publicServiceType
         publicServiceId:self.serviceProfile.publicServiceId
         success:^{
-            if (weakSelf.serviceProfile.followed) {
-                weakSelf.serviceProfile.followed = NO;
+            if (self.serviceProfile.followed) {
+                self.serviceProfile.followed = NO;
                 dispatch_async(dispatch_get_main_queue(), ^{
-                    if (!weakSelf.serviceProfile.followed) {
-                        NSUInteger count = weakSelf.navigationController.viewControllers.count;
+                    if (!self.serviceProfile.followed) {
+                        NSUInteger count = self.navigationController.viewControllers.count;
                         if (count > 1) {
-                            UIViewController *preVC = weakSelf.navigationController.viewControllers[count - 2];
+                            UIViewController *preVC = self.navigationController.viewControllers[count - 2];
                             if ([preVC isKindOfClass:[RCConversationViewController class]]) {
-                                [weakSelf.navigationController popToRootViewControllerAnimated:YES];
+                                [self.navigationController popToRootViewControllerAnimated:YES];
                                 return;
                             }
                         }
                     }
-                    weakSelf.serviceProfile = weakSelf.serviceProfile;
-                    weakSelf.cellCollections = nil;
-                    [weakSelf cellCollections];
-                    [weakSelf.tableView reloadData];
+                    self.serviceProfile = self.serviceProfile;
+                    self.cellCollections = nil;
+                    [self cellCollections];
+                    [self.tableView reloadData];
                 });
             }
             dispatch_async(dispatch_get_main_queue(), ^{
-                [RCKitUtility hideProgressViewFor:weakSelf.tableView animated:YES];
+                [RCKitUtility hideProgressViewFor:self.tableView animated:YES];
             });
         }
         error:^(RCErrorCode status) {
             dispatch_async(dispatch_get_main_queue(), ^{
-                [RCKitUtility hideProgressViewFor:weakSelf.tableView animated:YES];
+                [RCKitUtility hideProgressViewFor:self.tableView animated:YES];
             });
         }];
 }

@@ -29,7 +29,7 @@ static RCVoiceRecorder *rcHQVoiceRecorderHandler = nil;
     @synchronized(self) {
         if (nil == rcVoiceRecorderHandler) {
             rcVoiceRecorderHandler = [[[self class] alloc] init];
-            NSInteger sample = 8000.00f;
+            NSInteger sample;
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
             switch ([RCCoreClient sharedCoreClient].sampleRate) {
@@ -41,6 +41,7 @@ static RCVoiceRecorder *rcHQVoiceRecorderHandler = nil;
                 sample = 16000.00f;
                 break;
             default:
+                sample = 8000.00f;
                 break;
             }
             rcVoiceRecorderHandler.recordSettings = @{

@@ -13,6 +13,7 @@
 #import "RCloudImageView.h"
 #import "RCConversationModel.h"
 #import "RCBaseImageView.h"
+#import "RCBaseLabel.h"
 @interface RCSelectConversationCell ()
 /*!
  Cell的数据模型
@@ -23,7 +24,7 @@
 
 @property (nonatomic, strong) RCloudImageView *headerImageView;
 
-@property (nonatomic, strong) UILabel *nameLabel;
+@property (nonatomic, strong) RCBaseLabel *nameLabel;
 
 @end
 
@@ -177,15 +178,13 @@
     return _headerImageView;
 }
 
-- (UILabel *)nameLabel {
+- (RCBaseLabel *)nameLabel {
     if (!_nameLabel) {
-        _nameLabel = [[UILabel alloc] init];
+        _nameLabel = [[RCBaseLabel alloc] init];
         if ([RCKitUtility isRTL]) {
             _nameLabel.frame = CGRectMake(0, 5, self.bounds.size.width - 55, 60);
-            _nameLabel.textAlignment = NSTextAlignmentRight;
         } else {
             _nameLabel.frame = CGRectMake(110, 5, self.bounds.size.width - 110, 60);
-            _nameLabel.textAlignment = NSTextAlignmentLeft;
         }
         _nameLabel.textColor = RCDYCOLOR(0x000000, 0x9f9f9f);
     }

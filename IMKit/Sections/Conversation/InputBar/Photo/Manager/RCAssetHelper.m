@@ -224,10 +224,9 @@ progressHandler:(void (^)(double progress, NSError *error, BOOL *stop, NSDiction
     // switch to the main queue to update the UI.
     if (!self.isSynchronizing) {
         self.isSynchronizing = YES;
-        __weak typeof(self) weakSelf = self;
         [self getAlbumsFromSystem:^(NSArray *albumList) {
-            weakSelf.assetsGroups = albumList;
-            weakSelf.isSynchronizing = NO;
+            self.assetsGroups = albumList;
+            self.isSynchronizing = NO;
         }];
     }
 }

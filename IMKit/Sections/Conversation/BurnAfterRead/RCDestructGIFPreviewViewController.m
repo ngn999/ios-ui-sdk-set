@@ -70,12 +70,11 @@
     RCGIFMessage *gifMessage = (RCGIFMessage *)msg.content;
     if (gifMessage && gifMessage.localPath.length > 0) {
         [[RCCoreClient sharedCoreClient] messageBeginDestruct:msg];
-        __weak typeof(self) weakSelf = self;
         dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-            weakSelf.gifData = [NSData dataWithContentsOfFile:gifMessage.localPath];
+            self.gifData = [NSData dataWithContentsOfFile:gifMessage.localPath];
             dispatch_async(dispatch_get_main_queue(), ^{
-                if (weakSelf.gifData) {
-                    weakSelf.gifView.animatedImage = [RCGIFImage animatedImageWithGIFData:weakSelf.gifData];
+                if (self.gifData) {
+                    self.gifView.animatedImage = [RCGIFImage animatedImageWithGIFData:self.gifData];
                 }
             });
         });
@@ -86,20 +85,19 @@
 
 - (void)downLoadGif {
     [self showProgressView];
-    __weak typeof(self) weakSelf = self;
-    [[RCIM sharedRCIM] downloadMediaMessage:weakSelf.messageModel.messageId  progress:^(int progress) {
+    [[RCIM sharedRCIM] downloadMediaMessage:self.messageModel.messageId  progress:^(int progress) {
         dispatch_main_async_safe(^{
-            [weakSelf.progressView updateProgress:progress];
+            [self.progressView updateProgress:progress];
         });
     } success:^(NSString *mediaPath) {
         dispatch_main_async_safe(^{
-            [weakSelf hiddenProgressView];
-            [weakSelf configModel];
+            [self hiddenProgressView];
+            [self configModel];
         });
     } error:^(RCErrorCode errorCode) {
         dispatch_main_async_safe(^{
-            [weakSelf hiddenProgressView];
-            [weakSelf showFailedView];
+            [self hiddenProgressView];
+            [self showFailedView];
         });
     } cancel:^{
         

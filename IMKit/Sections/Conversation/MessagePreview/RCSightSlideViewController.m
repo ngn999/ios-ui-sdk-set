@@ -173,7 +173,7 @@
     for (RCMessage *mesage in array) {
         if (!(mesage.content.destructDuration > 0)) {
             RCMessageModel *model = [RCMessageModel modelWithMessage:mesage];
-            [backwardMessages addObject:model];
+            if (model) [backwardMessages addObject:model];
         }
     }
     return backwardMessages.copy;
@@ -532,9 +532,6 @@
         [_collectionView setPagingEnabled:YES];
         _collectionView.showsHorizontalScrollIndicator = NO;
         _collectionView.backgroundColor = [UIColor blackColor];
-        if (([RCKitUtility isRTL])) {
-            _collectionView.semanticContentAttribute = UISemanticContentAttributeForceRightToLeft;
-        }
     }
     return _collectionView;
 }

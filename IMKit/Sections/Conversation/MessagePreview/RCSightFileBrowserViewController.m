@@ -128,10 +128,6 @@ forRowAtIndexPath:(NSIndexPath *)indexPath {
     ssv.messageModel = [RCMessageModel modelWithMessage:model];
     ssv.topRightBtnHidden = YES;
     RCBaseNavigationController *navc = [[RCBaseNavigationController alloc] initWithRootViewController:ssv];
-    
-    if ([RCSemanticContext isRTL]) {
-        navc.view.semanticContentAttribute = UISemanticContentAttributeForceRightToLeft;
-    }
     navc.modalPresentationStyle = UIModalPresentationFullScreen;
     [self presentViewController:navc animated:YES completion:nil];
 }

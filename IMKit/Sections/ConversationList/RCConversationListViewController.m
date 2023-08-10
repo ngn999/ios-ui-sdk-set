@@ -323,10 +323,9 @@
 }
 
 - (void)refreshConversationTableViewIfNeeded {
-    __weak typeof(self) weakSelf = self;
     [self.dataSource forceLoadConversationModelList:^(NSMutableArray *modelList) {
-        [weakSelf.conversationListTableView reloadData];
-        [weakSelf updateEmptyConversationView];
+        [self.conversationListTableView reloadData];
+        [self updateEmptyConversationView];
     }];
 }
 

@@ -125,27 +125,26 @@ NSString *const KNotificationMessageBaseCellUpdateCanReceiptStatus =
 #pragma mark - Public Methods
 
 - (void)updateStatusContentView:(RCMessageModel *)model {
-    __weak typeof(self) __blockSelf = self;
     dispatch_async(dispatch_get_main_queue(), ^{
-        __blockSelf.messageActivityIndicatorView.hidden = YES;
+        self.messageActivityIndicatorView.hidden = YES;
         if (model.messageDirection == MessageDirection_RECEIVE) {
             return;
         }
         switch (model.sentStatus) {
             case SentStatus_SENDING:
-                [__blockSelf updateStatusContentViewForSending:model];
+                [self updateStatusContentViewForSending:model];
                 break;
             case SentStatus_FAILED:
-                [__blockSelf updateStatusContentViewForFailed:model];
+                [self updateStatusContentViewForFailed:model];
                 break;
             case SentStatus_CANCELED:
-                [__blockSelf updateStatusContentViewForCanceled:model];
+                [self updateStatusContentViewForCanceled:model];
                 break;
             case SentStatus_SENT:
-                [__blockSelf updateStatusContentViewForSent:model];
+                [self updateStatusContentViewForSent:model];
                 break;
             case SentStatus_READ:
-                [__blockSelf updateStatusContentViewForRead:model];
+                [self updateStatusContentViewForRead:model];
                 break;
             default:
                 break;
@@ -361,7 +360,7 @@ NSString *const KNotificationMessageBaseCellUpdateCanReceiptStatus =
                         rect.origin.y = PortraitImageViewTop + NameHeight + NameAndContentSpace;
                     }
                 } else {
-                    if (self.showPortrait) {
+                    if (strongSelf.showPortrait) {
                         rect.origin.x = PortraitViewEdgeSpace + protraitWidth + HeadAndContentSpacing;
                     } else {
                         rect.origin.x = PortraitViewEdgeSpace;
@@ -475,6 +474,7 @@ NSString *const KNotificationMessageBaseCellUpdateCanReceiptStatus =
     if ([RCKitUtility isRTL]) {
         // receiver
         if (MessageDirection_RECEIVE == self.model.messageDirection) {
+            [self.nicknameLabel setTextAlignment:NSTextAlignmentRight];
             self.nicknameLabel.hidden = !self.model.isDisplayNickname;
             CGFloat portraitImageX = self.baseContentView.bounds.size.width - (protraitWidth + PortraitViewEdgeSpace);
             self.portraitImageView.frame = CGRectMake(portraitImageX, PortraitImageViewTop, protraitWidth, protraitHeight);
@@ -492,6 +492,7 @@ NSString *const KNotificationMessageBaseCellUpdateCanReceiptStatus =
     } else {
         // receiver
            if (MessageDirection_RECEIVE == self.model.messageDirection) {
+               [self.nicknameLabel setTextAlignment:NSTextAlignmentLeft];
                self.nicknameLabel.hidden = !self.model.isDisplayNickname;
                CGFloat portraitImageX = PortraitViewEdgeSpace;
                self.portraitImageView.frame =
@@ -646,22 +647,21 @@ NSString *const KNotificationMessageBaseCellUpdateCanReceiptStatus =
         if (!messageUId || [messageUId isEqualToString:@""]) {
             return;
         }
-        __weak typeof(self) weakSelf = self;
         [[RCCoreClient sharedCoreClient] sendReadReceiptRequest:message success:^{
-            weakSelf.model.isCanSendReadReceipt = NO;
+            self.model.isCanSendReadReceipt = NO;
             dispatch_async(dispatch_get_main_queue(), ^{
-                weakSelf.receiptView.hidden = YES;
-                weakSelf.receiptView.userInteractionEnabled = NO;
-                weakSelf.receiptStatusLabel.hidden = NO;
-                weakSelf.receiptStatusLabel.userInteractionEnabled = YES;
-                weakSelf.receiptStatusLabel.text =
+                self.receiptView.hidden = YES;
+                self.receiptView.userInteractionEnabled = NO;
+                self.receiptStatusLabel.hidden = NO;
+                self.receiptStatusLabel.userInteractionEnabled = YES;
+                self.receiptStatusLabel.text =
                 [NSString stringWithFormat:RCLocalizedString(@"readNum"), 0];
-                if (!weakSelf.model.readReceiptInfo) {
-                    weakSelf.model.readReceiptInfo = [[RCReadReceiptInfo alloc] init];
+                if (!self.model.readReceiptInfo) {
+                    self.model.readReceiptInfo = [[RCReadReceiptInfo alloc] init];
                 }
-                weakSelf.model.readReceiptInfo.isReceiptRequestMessage = YES;
-                if ([weakSelf.delegate respondsToSelector:@selector(didTapNeedReceiptView:)]) {
-                    [weakSelf.delegate didTapNeedReceiptView:weakSelf.model];
+                self.model.readReceiptInfo.isReceiptRequestMessage = YES;
+                if ([self.delegate respondsToSelector:@selector(didTapNeedReceiptView:)]) {
+                    [self.delegate didTapNeedReceiptView:self.model];
                 }
             });
         }error:^(RCErrorCode nErrorCode) {
@@ -855,7 +855,7 @@ NSString *const KNotificationMessageBaseCellUpdateCanReceiptStatus =
         if (userInfo.portraitUri.length > 0) {
             [weakSelf.portraitImageView sd_setImageWithURL:[NSURL URLWithString:userInfo.portraitUri]];
         }
-        [weakSelf.nicknameLabel setText:[RCKitUtility getDisplayName:userInfo]];
+        [self.nicknameLabel setText:[RCKitUtility getDisplayName:userInfo]];
     });
 }
 

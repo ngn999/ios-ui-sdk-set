@@ -45,12 +45,11 @@
     RCGIFMessage *gifMessage =
         (RCGIFMessage *)[[RCCoreClient sharedCoreClient] getMessage:self.messageModel.messageId].content;
     if (gifMessage && gifMessage.localPath.length > 0) {
-        __weak typeof(self) weakSelf = self;
         dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-            weakSelf.gifData = [NSData dataWithContentsOfFile:gifMessage.localPath];
+            self.gifData = [NSData dataWithContentsOfFile:gifMessage.localPath];
             dispatch_async(dispatch_get_main_queue(), ^{
-                if (weakSelf.gifData) {
-                    weakSelf.gifView.animatedImage = [RCGIFImage animatedImageWithGIFData:weakSelf.gifData];
+                if (self.gifData) {
+                    self.gifView.animatedImage = [RCGIFImage animatedImageWithGIFData:self.gifData];
                 }
             });
         });

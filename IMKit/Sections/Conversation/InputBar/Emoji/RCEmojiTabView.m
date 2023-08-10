@@ -210,7 +210,7 @@
         _emotionsListView.dataSource = self;
         _emotionsListView.scrollEnabled = YES;
         _emotionsListView.backgroundColor = RCDYCOLOR(0xffffff, 0x000000);
-        [_emotionsListView registerClass:[UICollectionViewCell class]
+        [_emotionsListView registerClass:[RCBaseCollectionViewCell class]
                          forCellWithReuseIdentifier:RCEmotionCollectCellIdentifier];
     }
     return _emotionsListView;

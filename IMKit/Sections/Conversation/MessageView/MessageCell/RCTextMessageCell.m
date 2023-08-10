@@ -108,8 +108,7 @@
 
 - (void)beginDestructing {
     RCTextMessage *textMessage = (RCTextMessage *)self.model.content;
-    if (self.model.messageDirection == MessageDirection_RECEIVE && textMessage.destructDuration > 0 &&
-        textMessage.destructDuration > 0) {
+    if (self.model.messageDirection == MessageDirection_RECEIVE && textMessage.destructDuration > 0) {
         [[RCCoreClient sharedCoreClient]
             messageBeginDestruct:[[RCCoreClient sharedCoreClient] getMessage:self.model.messageId]];
     }
@@ -159,8 +158,9 @@
     self.messageContentView.contentSize = CGSizeMake(bubbleWidth, bubbleHeight);
     RCTextMessage *textMessage = (RCTextMessage *)self.model.content;
     self.destructTextImage.hidden = YES;
+    NSNumber *numDuration = [[RCCoreClient sharedCoreClient] getDestructMessageRemainDuration:self.model.messageUId];
     if (textMessage.destructDuration > 0 && self.model.messageDirection == MessageDirection_RECEIVE &&
-        ![[RCCoreClient sharedCoreClient] getDestructMessageRemainDuration:self.model.messageUId]) {
+        !numDuration) {
         self.destructTextImage.hidden = NO;
     }
     
@@ -176,8 +176,7 @@
         self.textLabel.frame =  CGRectMake(TEXT_SPACE_LEFT, (bubbleHeight - labelSize.height) / 2, labelSize.width, labelSize.height);
     }
     
-    if (textMessage.destructDuration > 0 && self.model.messageDirection == MessageDirection_RECEIVE &&
-        ![[RCCoreClient sharedCoreClient] getDestructMessageRemainDuration:self.model.messageUId]) {
+    if (textMessage.destructDuration > 0 && self.model.messageDirection == MessageDirection_RECEIVE && !numDuration) {
         self.textLabel.text = RCLocalizedString(@"ClickToView");
     }else if(textMessage){
         self.textLabel.text = textMessage.content;
@@ -285,9 +284,10 @@
 + (CGSize)getTextSize:(RCMessageModel *)model{
     CGFloat textMaxWidth = [RCMessageCellTool getMessageContentViewMaxWidth] - TEXT_SPACE_LEFT - TEXT_SPACE_RIGHT;
     RCTextMessage *textMessage = (RCTextMessage *)model.content;
+    NSNumber *numDuration = [[RCCoreClient sharedCoreClient] getDestructMessageRemainDuration:model.messageUId];
     CGSize textMessageSize;
     if (textMessage.destructDuration > 0 && model.messageDirection == MessageDirection_RECEIVE &&
-        ![[RCCoreClient sharedCoreClient] getDestructMessageRemainDuration:model.messageUId]) {
+        !numDuration) {
         textMessageSize =
             [RCKitUtility getTextDrawingSize:RCLocalizedString(@"ClickToView")
                                         font:[[RCKitConfig defaultConfig].font fontOfSecondLevel]
@@ -312,7 +312,11 @@
         [_textLabel setFont:[[RCKitConfig defaultConfig].font fontOfSecondLevel]];
         _textLabel.numberOfLines = 0;
         [_textLabel setLineBreakMode:NSLineBreakByWordWrapping];
-        [_textLabel setTextAlignment:NSTextAlignmentLeft];
+        if([RCKitUtility isRTL]){
+            _textLabel.textAlignment = NSTextAlignmentRight;
+        }else{
+            _textLabel.textAlignment = NSTextAlignmentLeft;
+        }
         _textLabel.delegate = self;
         _textLabel.userInteractionEnabled = YES;
         _textLabel.attributeDictionary = [self attributeDictionary];

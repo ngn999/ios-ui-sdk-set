@@ -345,7 +345,10 @@
     RCloudImageView *portraitView = [[RCloudImageView alloc] init];
     portraitView.frame = CGRectMake(10.0, 5.0, RCKitConfigCenter.ui.globalMessagePortraitSize.width,
                                     RCKitConfigCenter.ui.globalMessagePortraitSize.height);
-
+    if([RCKitUtility isRTL]){
+        portraitView.frame = CGRectMake(self.view.bounds.size.width-RCKitConfigCenter.ui.globalMessagePortraitSize.height-10, 5.0, RCKitConfigCenter.ui.globalMessagePortraitSize.width,
+                                        RCKitConfigCenter.ui.globalMessagePortraitSize.height);
+    }
     [portraitView setPlaceholderImage:RCResourceImage(@"default_portrait_msg")];
     [portraitView setImageURL:portraitURL];
 
@@ -378,6 +381,11 @@
             _searchController.searchBar.searchTextField.backgroundColor = [RCKitUtility generateDynamicColor:HEXCOLOR(0xf9f9f9) darkColor:[HEXCOLOR(0x1c1c1e) colorWithAlphaComponent:0.6]];;
         }
         _searchController.dimsBackgroundDuringPresentation = NO;
+        if ([RCKitUtility isRTL]) {
+            _searchController.searchBar.semanticContentAttribute = UISemanticContentAttributeForceRightToLeft;
+        }else{
+            _searchController.searchBar.semanticContentAttribute = UISemanticContentAttributeForceLeftToRight;
+        }
     }
     return _searchController;
 }

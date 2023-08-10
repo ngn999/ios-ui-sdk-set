@@ -7,15 +7,19 @@
 //
 
 #import "RCBaseCollectionView.h"
-
+#import "RCSemanticContext.h"
 @implementation RCBaseCollectionView
-
-/*
-// Only override drawRect: if you perform custom drawing.
-// An empty implementation adversely affects performance during animation.
-- (void)drawRect:(CGRect)rect {
-    // Drawing code
+- (instancetype)initWithFrame:(CGRect)frame collectionViewLayout:(UICollectionViewLayout *)layout{
+    self = [super initWithFrame:frame collectionViewLayout:layout];
+    if(self){
+        if ([RCSemanticContext isRTL]) {
+            self.semanticContentAttribute = UISemanticContentAttributeForceRightToLeft;
+        }else{
+            self.semanticContentAttribute = UISemanticContentAttributeForceLeftToRight;
+        }
+    }
+    return self;
 }
-*/
+
 
 @end

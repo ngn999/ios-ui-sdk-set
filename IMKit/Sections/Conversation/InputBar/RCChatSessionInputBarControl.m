@@ -78,6 +78,8 @@ NSString *const RCKitKeyboardWillShowNotification = @"RCKitKeyboardWillShowNotif
 
 @property (nonatomic, strong) UIView *safeAreaView;
 
+@property (nonatomic, strong) CALayer *topLineLayer;
+
 @end
 
 @implementation RCChatSessionInputBarControl
@@ -102,6 +104,7 @@ NSString *const RCKitKeyboardWillShowNotification = @"RCKitKeyboardWillShowNotif
     self.keyboardFrame = CGRectZero;
     self.isNew = 0;
     [self addBottomAreaView];
+    [self.layer addSublayer:self.topLineLayer];
 }
 
 #pragma mark - Super Methods
@@ -113,15 +116,6 @@ NSString *const RCKitKeyboardWillShowNotification = @"RCKitKeyboardWillShowNotif
     if ([self.delegate respondsToSelector:@selector(chatInputBar:shouldChangeFrame:)]) {
         [self.delegate chatInputBar:self shouldChangeFrame:frame];
     }
-}
-
-- (void)drawRect:(CGRect)rect {
-    [super drawRect:rect];
-    //上边线
-    CALayer *layer = [CALayer layer];
-    layer.frame = CGRectMake(0, 0, self.frame.size.width, 0.5);
-    layer.backgroundColor = RCDYCOLOR(0xe3e5e6, 0x2f2f2f).CGColor;
-    [self.layer addSublayer:layer];
 }
 
 - (BOOL)canBecomeFirstResponder {
@@ -248,9 +242,6 @@ NSString *const RCKitKeyboardWillShowNotification = @"RCKitKeyboardWillShowNotif
         picker.conversationType = self.conversationType;
         picker.targetId = self.targetId;
         RCBaseNavigationController *rootVC = [[RCBaseNavigationController alloc] initWithRootViewController:picker];
-        if ([RCSemanticContext isRTL]) {
-            rootVC.view.semanticContentAttribute = UISemanticContentAttributeForceRightToLeft;
-        }
         [self.delegate presentViewController:rootVC functionTag:PLUGIN_BOARD_ITEM_LOCATION_TAG];
     }
 }
@@ -261,9 +252,6 @@ NSString *const RCKitKeyboardWillShowNotification = @"RCKitKeyboardWillShowNotif
         [[RCFileSelectorViewController alloc] initWithRootPath:[RCCoreClient sharedCoreClient].fileStoragePath];
     picker.delegate = self;
     RCBaseNavigationController *rootVC = [[RCBaseNavigationController alloc] initWithRootViewController:picker];
-    if ([RCSemanticContext isRTL]) {
-        rootVC.view.semanticContentAttribute = UISemanticContentAttributeForceRightToLeft;
-    }
     dispatch_async(dispatch_get_main_queue(), ^{
         [self.delegate presentViewController:rootVC functionTag:PLUGIN_BOARD_ITEM_FILE_TAG];
     });
@@ -289,8 +277,12 @@ NSString *const RCKitKeyboardWillShowNotification = @"RCKitKeyboardWillShowNotif
     if (self.conversationType == ConversationType_PRIVATE || self.conversationType == ConversationType_GROUP) {
         self.commonPhrasesSource = commonPhrasesList;
         self.commonPhrasesListView.dataSource = commonPhrasesList;
+        [self.commonPhrasesListView reloadCommonPhrasesList];
         CGRect currentFrame = self.frame;
-        self.frame = CGRectMake(currentFrame.origin.x, currentFrame.origin.y-RC_CommonPhrasesView_Height, currentFrame.size.width,
+        if (currentFrame.size.height != (RC_CommonPhrasesView_Height + RC_ChatSessionInputBar_Height)) {
+            currentFrame.origin.y -= RC_CommonPhrasesView_Height;
+        }
+        self.frame = CGRectMake(currentFrame.origin.x, currentFrame.origin.y, currentFrame.size.width,
                                 RC_CommonPhrasesView_Height + RC_ChatSessionInputBar_Height);
         [self resetInputContainerView];
         return YES;
@@ -598,12 +590,11 @@ NSString *const RCKitKeyboardWillShowNotification = @"RCKitKeyboardWillShowNotif
          didWriteSightAtURL:(NSURL *)url
                   thumbnail:(UIImage *)thumnail
                    duration:(NSUInteger)duration {
-    __weak typeof(self) weakSelf = self;
     [sightVC
      dismissViewControllerAnimated:YES
      completion:^{
-        if ([weakSelf.delegate respondsToSelector:@selector(sightDidFinishRecord:thumbnail:duration:)]) {
-            [weakSelf.delegate sightDidFinishRecord:url.path thumbnail:thumnail duration:duration];
+        if ([self.delegate respondsToSelector:@selector(sightDidFinishRecord:thumbnail:duration:)]) {
+            [self.delegate sightDidFinishRecord:url.path thumbnail:thumnail duration:duration];
         }
     }];
 }
@@ -888,9 +879,6 @@ NSString *const RCKitKeyboardWillShowNotification = @"RCKitKeyboardWillShowNotif
     userListVC.navigationTitle = RCLocalizedString(@"SelectMentionedUser");
     userListVC.maxSelectedUserNumber = 1;
     RCBaseNavigationController *rootVC = [[RCBaseNavigationController alloc] initWithRootViewController:userListVC];
-    if ([RCSemanticContext isRTL]) {
-        rootVC.view.semanticContentAttribute = UISemanticContentAttributeForceRightToLeft;
-    }
     dispatch_async(dispatch_get_main_queue(), ^{
         [self.delegate presentViewController:rootVC functionTag:INPUT_MENTIONED_SELECT_TAG];
     });
@@ -1544,6 +1532,16 @@ NSString *const RCKitKeyboardWillShowNotification = @"RCKitKeyboardWillShowNotif
         _menuContainerView.hidden = YES;
     }
     return _menuContainerView;
+}
+
+- (CALayer *)topLineLayer {
+    if (!_topLineLayer) {
+        CALayer *layer = [CALayer layer];
+        layer.frame = CGRectMake(0, 0, self.frame.size.width, 0.5);
+        layer.backgroundColor = RCDYCOLOR(0xe3e5e6, 0x2f2f2f).CGColor;
+        _topLineLayer = layer;
+    }
+    return _topLineLayer;
 }
 
 - (void)addBottomAreaView {

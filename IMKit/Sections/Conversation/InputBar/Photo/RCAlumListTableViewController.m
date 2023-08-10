@@ -77,7 +77,11 @@ static NSString *const cellReuseIdentifier = @"cell";
     rightBarView.frame = CGRectMake(0, 0, 80, 40);
     UILabel *doneTitleLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, 0, 80, 40)];
     doneTitleLabel.text = RCLocalizedString(@"Cancel");
-    doneTitleLabel.textAlignment = NSTextAlignmentRight;
+    if([RCKitUtility isRTL]){
+        doneTitleLabel.textAlignment = NSTextAlignmentLeft;
+    }else{
+        doneTitleLabel.textAlignment = NSTextAlignmentRight;
+    }
     doneTitleLabel.font = [[RCKitConfig defaultConfig].font fontOfSecondLevel];
     
     doneTitleLabel.textColor = [RCKitUtility
@@ -105,7 +109,6 @@ static NSString *const cellReuseIdentifier = @"cell";
 
 - (void)getDataSourceAndReloadView{
     RCAssetHelper *sharedAssetHelper = [RCAssetHelper shareAssetHelper];
-    __weak RCAlumListTableViewController *weakSelf = self;
     NSArray *cacheAssetGroup = [sharedAssetHelper getCachePhotoGroups];
     if (cacheAssetGroup && cacheAssetGroup.count > 0) {
         self.libraryList = cacheAssetGroup;
@@ -121,7 +124,7 @@ static NSString *const cellReuseIdentifier = @"cell";
         [sharedAssetHelper
             getAlbumsFromSystem:^(NSArray *assetGroup) {
                               if (assetGroup) {
-                                  weakSelf.libraryList = assetGroup;
+                                  self.libraryList = assetGroup;
                               }
             
                               dispatch_async(dispatch_get_main_queue(), ^{
@@ -131,7 +134,7 @@ static NSString *const cellReuseIdentifier = @"cell";
                                       if (@available(iOS 15, *)) {
                                           // nothing to do
                                       } else if (@available(iOS 14, *)) {
-                                          [RCKitUtility hideProgressViewFor:weakSelf.tableView animated:YES];
+                                          [RCKitUtility hideProgressViewFor:self.tableView animated:YES];
                                           // 相册bug https://developer.apple.com/forums/thread/658114
                                           [RCAlertView showAlertController:RCLocalizedString(@"PhotoLibraryBugErrorAlert") message:nil actionTitles:nil cancelTitle:RCLocalizedString(@"Cancel") confirmTitle:RCLocalizedString(@"restartApp") preferredStyle:UIAlertControllerStyleAlert actionsBlock:nil cancelBlock:nil confirmBlock:^{
                                               // 首次发生并重启后问题解决，记录一下， 下次不必再处理此case
@@ -148,21 +151,21 @@ static NSString *const cellReuseIdentifier = @"cell";
                                   }
 
                                   
-                                  [RCKitUtility hideProgressViewFor:weakSelf.tableView animated:YES];
+                                  [RCKitUtility hideProgressViewFor:self.tableView animated:YES];
 
-                                  if (weakSelf.libraryList.count) {
-                                      RCAlbumModel *assetsGroup = weakSelf.libraryList[0];
-                                      [weakSelf pushImagePickerController:assetsGroup animated:NO];
+                                  if (self.libraryList.count) {
+                                      RCAlbumModel *assetsGroup = self.libraryList[0];
+                                      [self pushImagePickerController:assetsGroup animated:NO];
                                       //能获取到相册说明有权限，此时隐藏权限提示
-                                      [weakSelf.tipsLabel setHidden:YES];
+                                      [self.tipsLabel setHidden:YES];
                                   } else {
                                       if ([[RCAssetHelper shareAssetHelper] hasAuthorizationStatusAuthorized]) {
-                                          [weakSelf.tipsLabel setHidden:YES];
+                                          [self.tipsLabel setHidden:YES];
                                       }else{
-                                          [weakSelf.tipsLabel setHidden:NO];
+                                          [self.tipsLabel setHidden:NO];
                                       }
                                   }
-                                  [weakSelf.tableView reloadData];
+                                  [self.tableView reloadData];
 
                               });
                           }];
@@ -211,7 +214,7 @@ static NSString *const cellReuseIdentifier = @"cell";
 }
 
 - (void)p_getOriginVideo:(RCAssetModel *)model photos:(NSMutableArray *)photos result:(NSMutableArray *)results full:(BOOL)isFull{
-    __weak typeof(self) weakself = self;
+    __weak typeof(self) weakSelf = self;
     [[RCAssetHelper shareAssetHelper] getOriginVideoWithAsset:model.asset
         result:^(AVAsset *avAsset, NSDictionary *info, NSString *imageIdentifier) {
             if (![[[RCAssetHelper shareAssetHelper] getAssetIdentifier:model.asset] isEqualToString:imageIdentifier]) {
@@ -253,19 +256,20 @@ static NSString *const cellReuseIdentifier = @"cell";
             [self handlePhotos:photos result:results full:isFull];
         }
         progressHandler:^(double progress, NSError *error, BOOL *stop, NSDictionary *info) {
-            if (progress < 1 && !error && !weakself.isShowHUD) {
+        __strong typeof(weakSelf) strongSelf = weakSelf;
+            if (progress < 1 && !error && !strongSelf.isShowHUD) {
                 dispatch_async(dispatch_get_main_queue(), ^{
-                    weakself.isShowHUD = YES;
-                    weakself.progressHUD =
+                    strongSelf.isShowHUD = YES;
+                    strongSelf.progressHUD =
                         [RCMBProgressHUD showHUDAddedTo:[UIApplication sharedApplication].keyWindow animated:YES];
-                    weakself.progressHUD.label.text = RCLocalizedString(@"iCloudDownloading");
+                    strongSelf.progressHUD.label.text = RCLocalizedString(@"iCloudDownloading");
                 });
             }
             if (error) {
                 // from iCloud download error
-                weakself.progressHUD.label.text = RCLocalizedString(@"iCloudDownloadFail");
-                [weakself.progressHUD hideAnimated:YES afterDelay:1];
-                weakself.isShowHUD = NO;
+                strongSelf.progressHUD.label.text = RCLocalizedString(@"iCloudDownloadFail");
+                [strongSelf.progressHUD hideAnimated:YES afterDelay:1];
+                strongSelf.isShowHUD = NO;
             }
     }];
 }

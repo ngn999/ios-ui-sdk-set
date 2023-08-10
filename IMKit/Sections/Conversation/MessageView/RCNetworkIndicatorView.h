@@ -8,7 +8,8 @@
 
 #import <UIKit/UIKit.h>
 #import "RCBaseImageView.h"
-@interface RCNetworkIndicatorView : UIView
+#import "RCBaseView.h"
+@interface RCNetworkIndicatorView : RCBaseView
 
 @property (nonatomic, strong) RCBaseImageView *networkUnreachableImageView;
 

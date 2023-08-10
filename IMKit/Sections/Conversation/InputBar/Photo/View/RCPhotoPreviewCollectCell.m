@@ -43,11 +43,10 @@
     if ([self showGifImageView]) {
         return;
     }
-    __weak typeof(self) weakSelf = self;
     [[RCAssetHelper shareAssetHelper]
         getPreviewWithAsset:model.asset
                      result:^(UIImage *photo, NSDictionary *info) {
-         if (![weakSelf.representedAssetIdentifier
+         if (![self.representedAssetIdentifier
                isEqualToString:[[RCAssetHelper shareAssetHelper] getAssetIdentifier:model.asset]]) {
              return;
          }
@@ -55,8 +54,8 @@
              return;
          }
          dispatch_async(dispatch_get_main_queue(), ^{
-             weakSelf.previewImageView.image = photo;
-             [weakSelf resizeSubviews];
+             self.previewImageView.image = photo;
+             [self resizeSubviews];
          });
      }];
 }
@@ -68,7 +67,6 @@
 
 - (BOOL)showGifImageView{
     if ([[self.model.asset valueForKey:@"uniformTypeIdentifier"] isEqualToString:(__bridge NSString *)kUTTypeGIF]) {
-        __weak typeof(self) weakSelf = self;
         [[RCAssetHelper shareAssetHelper]
          getOriginImageDataWithAsset:self.model
          result:^(NSData *imageData, NSDictionary *info, RCAssetModel *assetModel) {
@@ -77,8 +75,8 @@
             }
             RCGIFImage *gifImage = [RCGIFImage animatedImageWithGIFData:imageData];
             dispatch_async(dispatch_get_main_queue(), ^{
-                weakSelf.previewImageView.animatedImage = gifImage;
-                [weakSelf resetSubviews];
+                self.previewImageView.animatedImage = gifImage;
+                [self resetSubviews];
             });
         }progressHandler:^(double progress, NSError * _Nonnull error, BOOL * _Nonnull stop, NSDictionary * _Nonnull info) {
             

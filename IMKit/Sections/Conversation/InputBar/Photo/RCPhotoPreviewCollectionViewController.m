@@ -414,7 +414,6 @@ static NSString *const videoCellReuseIdentifier = @"VideoPreviewCell";
     [self.view addSubview:_bottomView];
     // add button for bottom bar
     _sendButton = [[RCBaseButton alloc] init];
-    _sendButton.contentHorizontalAlignment = UIControlContentHorizontalAlignmentRight;
     [_sendButton setTitle:RCLocalizedString(@"Send") forState:UIControlStateNormal];
     [_sendButton setTitleColor:RCResourceColor(@"photoPreview_send_disable", @"0x959595")
                       forState:UIControlStateDisabled];
@@ -551,6 +550,13 @@ static NSString *const videoCellReuseIdentifier = @"VideoPreviewCell";
     [self.bottomView layoutIfNeeded];
     [self _updateFullButton];
     [self _updateEditButton];
+    if([RCSemanticContext isRTL]){
+        _fullButton.semanticContentAttribute = UISemanticContentAttributeForceRightToLeft;
+        _sendButton.contentHorizontalAlignment = UIControlContentHorizontalAlignmentLeft;
+    }else{
+        _fullButton.semanticContentAttribute = UISemanticContentAttributeForceLeftToRight;
+        _sendButton.contentHorizontalAlignment = UIControlContentHorizontalAlignmentRight;
+    }
 }
 
 - (void)selectedImageCanSend:(RCAssetModel *)selectModel complete:(void (^)(BOOL canSend))completeBlock {
@@ -624,14 +630,13 @@ static NSString *const videoCellReuseIdentifier = @"VideoPreviewCell";
 }
 
 - (void)_updateBottomSendImageCountButton {
-    __weak typeof(self) weakSelf = self;
     dispatch_async(dispatch_get_main_queue(), ^{
-        if (weakSelf.selectedArr.count && weakSelf.bottomView) {
+        if (self.selectedArr.count && self.bottomView) {
             self.sendButton.enabled = YES;
             if ([RCKitUtility isRTL]) {
-                [self.sendButton setTitle:[NSString stringWithFormat:@"(%lu) %@", (unsigned long)weakSelf.selectedArr.count, RCLocalizedString(@"Send")] forState:(UIControlStateNormal)];
+                [self.sendButton setTitle:[NSString stringWithFormat:@"(%lu) %@", (unsigned long)self.selectedArr.count, RCLocalizedString(@"Send")] forState:(UIControlStateNormal)];
             } else {
-                [self.sendButton setTitle:[NSString stringWithFormat:@"%@ (%lu)",RCLocalizedString(@"Send"), (unsigned long)weakSelf.selectedArr.count] forState:(UIControlStateNormal)];
+                [self.sendButton setTitle:[NSString stringWithFormat:@"%@ (%lu)",RCLocalizedString(@"Send"), (unsigned long)self.selectedArr.count] forState:(UIControlStateNormal)];
             }
         } else {
             self.sendButton.enabled = NO;
@@ -696,16 +701,14 @@ static NSString *const videoCellReuseIdentifier = @"VideoPreviewCell";
             [[PHImageManager defaultManager] cancelImageRequest:self.imageRequestID];
         }
         self.currentAssetIdentifier = [[RCAssetHelper shareAssetHelper] getAssetIdentifier:model.asset];
-        __weak typeof(self) weakSelf = self;
         self.imageRequestID = [[RCAssetHelper shareAssetHelper]
             getAssetDataSizeWithAsset:self.previewPhotosArr[self.currentIndex].asset
                                result:^(CGFloat size) {
-                                   if ([weakSelf.currentAssetIdentifier
+                                   if ([self.currentAssetIdentifier
                                            isEqualToString:[[RCAssetHelper shareAssetHelper]
                                                                getAssetIdentifier:model.asset]]) {
-                                       __strong typeof(weakSelf) strongSelf = weakSelf;
                                        dispatch_async(dispatch_get_main_queue(), ^{
-                                           [strongSelf getImageSize:size];
+                                           [self getImageSize:size];
                                        });
                                    }
                                }];
